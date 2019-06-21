@@ -1,7 +1,7 @@
     ##STARTING CALC_SHK
     #
     #
-def calc_shk(lamGrid, lam, extrct, flatOlap, rvcc, idl=''):
+def calc_targOlapf(lamGrid, lam, extrct, flatOlap, rvcc, idl=''):
     ##intializations and hardcoded inputs
     ##TODO take command line input???
     ##mk_flatolap
@@ -13,7 +13,6 @@ def calc_shk(lamGrid, lam, extrct, flatOlap, rvcc, idl=''):
     import sys
     import astropy.io.fits
     import os
-    from hk_windows import hk_windows
     from matplotlib import pyplot as plt
 
     from astropy.convolution import convolve, Box1DKernel
@@ -23,10 +22,8 @@ def calc_shk(lamGrid, lam, extrct, flatOlap, rvcc, idl=''):
     ngord=len(gOrd)
     #sz=size(lam)#used to find nx TODO remove
     nx=4096#TODO BAD ADAM
-    gain=3.4           # e-/ADU
     rdnoi=7.*np.sqrt(5.*5.)           # read noise per resolution element in e-
     resel=.0015         #resolution element (nm)
-    kk=31.             # factor to make shk into equivalent width (a guess!)
 
 
     #TODO FIX THIS AND ALL SO THAT IT FOLLOWS PYTHON DATA FORMAT
@@ -98,27 +95,31 @@ def calc_shk(lamGrid, lam, extrct, flatOlap, rvcc, idl=''):
     #    plt.figure()
     #    plt.plot(range(len(pyL)),abs(pyL-idlL))
 
-
+    #plt.figure()
     #print(flatOlap)
-    #plt.xlim(396,398)
-    #plt.ylim(-50,1000)
+
     #plt.plot(lamGrid, targOlap, 'k-')
     #plt.xlabel('wavelength [nm]')
     #plt.ylabel('tragOlap')
-    #plt.figure()
-    #plt.xlim(396,398)
-    #plt.ylim(-50,1000)
+    
+
     ##print(flatOlap)
     #plt.plot(lamGrid, targOlapf, 'k-')
     #plt.xlabel('wavelength [nm]')
     #plt.ylabel('tragOlapf')
-    #plt.figure()
+    
     ##print(flatOlap)
     #plt.plot(lamGrid, flatOlap, 'k-')
     #plt.xlabel('wavelength [nm]')
-
-
-
+    
+    return targOlapf
+    
+    
+    
+def calc_shk(lamGrid, targOlapf, rvcc, idl=''):
+    from hk_windows import hk_windows
+    gain=3.4           # e-/ADU
+    kk=31.             # factor to make shk into equivalent width (a guess!)
     windows = hk_windows(rvcc, lamGrid)[0]
 
     fh=(targOlapf*windows[:,0]).sum()

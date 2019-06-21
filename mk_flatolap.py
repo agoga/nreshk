@@ -103,7 +103,7 @@ def mk_flatolap(lam, flat, idl=''):
 
     #plt.figure()
     #plot python data
-    #plt.plot(lamGrid, flatOlap, 'k-',color='red')
+    #plt.plot(lamGrid, flatOlapf, 'k-',color='red')
     #plt.xlabel('wavelength [nm]')
 
 
