@@ -1,7 +1,7 @@
     ##STARTING CALC_SHK
     #
     #
-def calc_targOlapf(lamGrid, lam, extrct, flatOlap, rvcc, idl=''):
+def calc_targOlapf(lamGrid, lam, extrct, flatOlap, label, idl=''):
     ##intializations and hardcoded inputs
     ##TODO take command line input???
     ##mk_flatolap
@@ -14,7 +14,7 @@ def calc_targOlapf(lamGrid, lam, extrct, flatOlap, rvcc, idl=''):
     import astropy.io.fits
     import os
     from matplotlib import pyplot as plt
-
+    from hk_windows import mkdir_p 
     from astropy.convolution import convolve, Box1DKernel
 
 
@@ -25,6 +25,7 @@ def calc_targOlapf(lamGrid, lam, extrct, flatOlap, rvcc, idl=''):
     rdnoi=7.*np.sqrt(5.*5.)           # read noise per resolution element in e-
     resel=.0015         #resolution element (nm)
 
+    
 
     #TODO FIX THIS AND ALL SO THAT IT FOLLOWS PYTHON DATA FORMAT
     #extrct= dataHDu1[1].data
@@ -102,30 +103,66 @@ def calc_targOlapf(lamGrid, lam, extrct, flatOlap, rvcc, idl=''):
     #plt.xlabel('wavelength [nm]')
     #plt.ylabel('tragOlap')
     
+    mkdir_p("images/" + label.split('/')[0])
+    fileStr = "images/" + label + "_targOlapf.pdf"
+    plt.plot(lamGrid, targOlapf, 'k-')
+    plt.xlabel('wavelength [nm]')
+    plt.ylabel('tragOlapf')
+    plt.tight_layout()
+    plt.savefig(fileStr)
+    plt.close()
 
-    ##print(flatOlap)
-    #plt.plot(lamGrid, targOlapf, 'k-')
-    #plt.xlabel('wavelength [nm]')
-    #plt.ylabel('tragOlapf')
-    
-    ##print(flatOlap)
-    #plt.plot(lamGrid, flatOlap, 'k-')
-    #plt.xlabel('wavelength [nm]')
-    
     return targOlapf
     
     
     
-def calc_shk(lamGrid, targOlapf, rvcc, idl=''):
+def calc_shk(lamGrid, targOlapf, rvcc, teff=6200., idl=''):
     from hk_windows import hk_windows
+    from matplotlib import pyplot as plt
+    
+
     gain=3.4           # e-/ADU
     kk=31.             # factor to make shk into equivalent width (a guess!)
-    windows = hk_windows(rvcc, lamGrid)[0]
+    cahLam=396.85# 396.967 #   #Ca II H line wavelength (nm, vacuum)
+    cakLam=393.369#393.485 #    #Ca II K line wavelength (nm, vacuum)
+    
+    #center of blue continuum band (nm, vacuum)
+    lamB=390.2176-.116#subtraction is the offset from our lab values     
+    #center of red continuum band (nm, vacuum)
+    lamR=400.2204-.116#subtraction is the offset from our lab values  
+    
+    windows = hk_windows(rvcc, lamGrid,cahLam,cakLam,lamB,lamR)[0]
 
     fh=(targOlapf*windows[:,0]).sum()
     fk=(targOlapf*windows[:,1]).sum()
     fr=(targOlapf*windows[:,2]).sum()
-
+    
+    mini = next((i for i, x in enumerate(windows[:,0]) if x), None)
+    maxi = [i for i, e in enumerate(windows[:,0]) if e != 0][-1]
+    #print('lamMin H: '+ str(lamGrid[mini]))
+    #print('lamMax H: '+ str(lamGrid[maxi]))
+    
+    mini = next((i for i, x in enumerate(windows[:,1]) if x), None)
+    maxi = [i for i, e in enumerate(windows[:,1]) if e != 0][-1]
+    #print('lamMin K: '+ str(lamGrid[mini]))
+    #print('lamMax K: '+ str(lamGrid[maxi]))
+    
+    #plt.figure()
+    #cur=windows[:,0]
+    #plt.plot(lamGrid[cur!=0],targOlapf[cur!=0])#*cur[cur!=0],'k-')
+    #plt.show()
+    #plt.close()
+    #plt.figure()
+    #cur=windows[:,1]
+    #plt.plot(lamGrid[cur!=0],targOlapf[cur!=0])#*cur[cur!=0],'k-')
+    #plt.show()
+    #plt.close()
+    #plt.figure()
+    #cur=windows[:,2]
+    ##plt.plot(lamGrid[cur!=0],targOlapf[cur!=0])#*cur[cur!=0],'k-')
+    #plt.show()
+    #plt.close()
+    
     #print('fh')
     #print(abs(fh-idl['fh']))
     #print('fk')
@@ -135,7 +172,10 @@ def calc_shk(lamGrid, targOlapf, rvcc, idl=''):
     #print('pl')
     #print(abs(plFactor-idl['plfactor']))
     #TODO FIND WORKING PYTHON PLANK FUNCTION
-    plFactor = 0.977753 #SO HACKED, TODO DOES THIS CHANGE??
+    from hk_windows import PlanckFunc as planck
+    plFactor = planck(lamB*10,teff)/planck(lamR*10,teff)
+    #print('plfactor: '+ str(plFactor))
+        #0.977753 #SO HACKED, TODO DOES THIS CHANGE??
     fb = fr*plFactor
 
     num = (fh+fk)*gain

@@ -1,12 +1,9 @@
-def hk_windows(rvcc,lamGrid):
+def hk_windows(rvcc,lamGrid,cahLam,cakLam,lamB,lamR):
     import numpy as np
     
     
     c=2.99792458e5  #speed of light (km/s)
-    cahLam=396.967     #Ca II H line wavelength (nm, vacuum)
-    cakLam=393.485     #Ca II K line wavelength (nm, vacuum)
-    lamB=390.2176      #center of blue continuum band (nm, vacuum)
-    lamR=400.2204      #center of red continuum band (nm, vacuum)
+        
     conWid=2.0         #wavelength width of continuum bands (nm, vacuum)
     lineWid=.109       #FWHM of line core window functions (nm, vacuum)
     
@@ -35,3 +32,38 @@ def hk_windows(rvcc,lamGrid):
     if len(s) > 0:
        windows[s,2]=1.
     return windows, lamB, lamR
+
+#https://stackoverflow.com/questions/11373610/save-matplotlib-file-to-a-directory
+def mkdir_p(mypath):
+    '''Creates a directory. equivalent to using mkdir -p on the command line'''
+
+    from errno import EEXIST
+    from os import makedirs,path
+
+    try:
+        makedirs(mypath)
+    except OSError as exc: # Python >2.5
+        if exc.errno == EEXIST and path.isdir(mypath):
+            pass
+        else: raise
+            
+
+def PlanckFunc (wl , T ) :
+    import numpy as np
+    import scipy.constants as sc
+ #Evaluate the emission intensity for a blackbody of temperature T
+ #as a function of wavelength
+
+ #Inputs :
+ #wl :: numpy array containing wavelengths [m]
+ #T :: temperature [K]
+ #Outputs :
+ #B :: intensity [W sr ** -1 m** -2]
+
+    wl = np.array(wl) # if the input is a list or a tuple, make itan array
+    h = sc.Planck # Planck constant [J s]
+
+    c = sc.c# speed of light [m s**−1]
+    kb = sc.k # Boltzmann constant [J K**−1]
+    B = ((2* h * c * c ) /( wl **5) ) /( np.exp (( h * c ) /( wl * kb * T ) ) -1)
+    return B

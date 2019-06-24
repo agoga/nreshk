@@ -1,16 +1,4 @@
-#https://stackoverflow.com/questions/11373610/save-matplotlib-file-to-a-directory
-def mkdir_p(mypath):
-    '''Creates a directory. equivalent to using mkdir -p on the command line'''
 
-    from errno import EEXIST
-    from os import makedirs,path
-
-    try:
-        makedirs(mypath)
-    except OSError as exc: # Python >2.5
-        if exc.errno == EEXIST and path.isdir(mypath):
-            pass
-        else: raise
 
 def import_lab_frame_spectra(fluxdir, minwl=None, maxwl=None, resolution=1, residual=False):
     import numpy as np
@@ -168,15 +156,16 @@ def tmp_find_del_lam(labGrid, lab, tarGrid, targ, smooth) :
     #print('index of maximum: ' + str(tmpMax) + ' and adjusted delLam: ' + str(tmpMax/len(out)))
     #print(out)
     #plt.figure(figsize=(12,6))
-    #plt.plot(lamGrid-offset, targOlapf, 'k-', color='blue')
-    #plt.axvline(x=393.4, color='red')
-    #plt.axvline(x=396.9, color='red')
-    #plt.plot(lamGrid, tmpTarg+1, 'k-', color="green")
+    #plt.plot(tarGrid, gausdTarg, 'k-', color='blue')
+    #plt.axvline(x=393.369, color='red')
+    #plt.axvline(x=396.85, color='red')
+
     #plt.plot(tarGrid-offset, gausdTarg, 'k-',color='green')
     #SCALE JUST FOR VIEWING
     #plt.plot(tarGrid, labInterp*tmpGridScale, 'k-')
-
-    return offset,gausdTarg,labInterp
+    #plt.show()
+    #plt.close()
+    return offset,targ,labInterp
 
     #shk = calc_shk(lamGrid, targOlapf, 17. )
     
@@ -193,6 +182,8 @@ def tmp_find_del_lam(labGrid, lab, tarGrid, targ, smooth) :
 def lamda_zoom(bGrid, base, oGrid, obs, regions, descript, width=1):
     import numpy as np
     from matplotlib import pyplot as plt
+    from hk_windows import mkdir_p
+    
     numRegions = len(regions)
     #fig index is the pass to subplot which shows shape of figure, this is for a tall skinny figure
     #ex 8 regions we want the index to start at 811 for first figure
@@ -246,8 +237,8 @@ def lamda_zoom(bGrid, base, oGrid, obs, regions, descript, width=1):
         
     
     #create pdf too 
-    mkdir_p("images/" + descript)
-    fileStr = "images/" + descript + "zoom.pdf"
+    mkdir_p("images/" + descript.split('/')[0])
+    fileStr = "images/" + descript + "_zoom.pdf"
     plt.tight_layout()
     plt.savefig(fileStr)
     
@@ -257,7 +248,7 @@ def lamda_zoom(bGrid, base, oGrid, obs, regions, descript, width=1):
     plt.plot(np.asarray(baseLam),np.asarray(baseLam)-np.asarray(obsLam), 'ko')
     plt.xlabel('lab frame lambda')
     plt.ylabel('lab lam - obs lam')
-    fileStr = "images/" + descript + "error_graph.pdf"
+    fileStr = "images/" + descript + "_error_graph.pdf"
     plt.tight_layout()
     plt.savefig(fileStr)
     #plt.show()
@@ -269,7 +260,7 @@ def lamda_zoom(bGrid, base, oGrid, obs, regions, descript, width=1):
         
     #only plot non-zero values    
     plt.plot(bGrid[base!=0],base[base!=0]*avgS,'k-',oGrid[obs!=0],obs[obs!=0],'g-')
-    fileStr = "images/" + descript + "wide_view.pdf"
+    fileStr = "images/" + descript + "_wide_view.pdf"
     plt.tight_layout()
     plt.savefig(fileStr)
     plt.close()
