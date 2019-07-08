@@ -1,3 +1,12 @@
+# This routine makes a wavelength grid spanning lamran[2], with constant
+# wavelength interval dlam (nm).  It reads an extracted flat-field file
+# filin from the reduced/flat directory appropriate to input site, and
+# the corresponding wavelength scale from the reduced/thar directory.
+# It trims and smooths the 4 bluemost orders of the flat field, and then
+# interpolates and sums the 4 flats onto the wavelength grid, taking account
+# of the effect of varying dlambda/dx in the original spectra.  Results are
+# written to a FITS file named in outfile (full pathname), and a new line
+# describing this output is added to $STAGE2ROOT/flatolap.csv.
 def mk_flatolap(lam, flat, idl=''):
     #WORKING MK_FLATOLAP
     ##PORT OF DR. TIM BROWN'S NRES HK CODE 
@@ -6,7 +15,7 @@ def mk_flatolap(lam, flat, idl=''):
     import numpy as np
     import scipy.io as sc
     import sys
-
+    from matplotlib.backends.backend_pdf import PdfPages
 
     from matplotlib import pyplot as plt
 
@@ -101,11 +110,13 @@ def mk_flatolap(lam, flat, idl=''):
     #output[:,0] = lamGrid    
     #output[:,1] = flatOlap  
 
-    #plt.figure()
+    #fig = plt.figure()
     #plot python data
-    #plt.plot(lamGrid, flatOlapf, 'k-',color='red')
+    #plt.plot(lamGrid, flatOlap, 'k-',color='red')
     #plt.xlabel('wavelength [nm]')
-
+    #plt.ylabel('flatOlap')
+    #curPdf.savefig(fig)
+    #plt.close()
 
     #PLOT TEST IDL FLAT DATA
 

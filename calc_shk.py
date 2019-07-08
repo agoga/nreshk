@@ -14,9 +14,9 @@ def calc_targOlapf(lamGrid, lam, extrct, flatOlap, label, idl=''):
     import astropy.io.fits
     import os
     from matplotlib import pyplot as plt
-    from hk_windows import mkdir_p 
+    from helpers import mkdir_p 
     from astropy.convolution import convolve, Box1DKernel
-
+    from matplotlib.backends.backend_pdf import PdfPages
 
     gOrd=[63,64,65,66]
     ngord=len(gOrd)
@@ -96,35 +96,49 @@ def calc_targOlapf(lamGrid, lam, extrct, flatOlap, label, idl=''):
     #    plt.figure()
     #    plt.plot(range(len(pyL)),abs(pyL-idlL))
 
-    #plt.figure()
+    #fig = plt.figure()
     #print(flatOlap)
 
-    #plt.plot(lamGrid, targOlap, 'k-')
+    #plt.plot(lamGrid, targOlapf, 'k-')
     #plt.xlabel('wavelength [nm]')
-    #plt.ylabel('tragOlap')
+    #plt.ylabel('tragOlapf')
+    #curPdf.savefig(fig)
+   # plt.close()
     
-    mkdir_p("images/" + label.split('/')[0])
-    fileStr = "images/" + label + "_targOlapf.pdf"
-    plt.plot(lamGrid, targOlapf, 'k-')
-    plt.xlabel('wavelength [nm]')
-    plt.ylabel('tragOlapf')
-    plt.tight_layout()
-    plt.savefig(fileStr)
-    plt.close()
 
     return targOlapf
     
     
+# This routine manages the computation of the Ca II H&K activity indes shk.
+# Inputs are:
+#  mjd = MJD-OBS for the input spectrum.
+#  siteid = site from which observation comes.
+# rvcc = redshift of target star relative to lab. (km/s)
+#  teff = Estimated Teff of target star.
+#  extrct(nx,nord) = extracted but not flat-fielded spectra of target. (ADU)
+#  lam(nx,nord) = wavelength solution corresp to extrct. (nm)
+# Outputs are:
+#   shk = (fH + fK)/(fB + fR) where fH, fK are the counts in the cores of
+#       the H and K lines, resp., and fB, fR are fluxes in nearby blue and
+#       red continuum bands.  Note that shk requires some considerable work
+#       to be converted to the more physically useful index R'_HK.
+#   eshk = an estimate of the photon+read noise applicable to shk.
+# For NRES, fB is not easily accessible, since the relevant echelle order is
+# not extracted.  Therefore, fB is approximated as FR*K(Teff), where the 
+# function K is the ratio of Planck functions in the red and blue bandpasses.
     
 def calc_shk(lamGrid, targOlapf, rvcc, teff=6200., idl=''):
-    from hk_windows import hk_windows
+    from helpers import hk_windows
+    from helpers import PlanckFunc as planck
+    
     from matplotlib import pyplot as plt
+    
     
 
     gain=3.4           # e-/ADU
     kk=31.             # factor to make shk into equivalent width (a guess!)
-    cahLam=396.85# 396.967 #   #Ca II H line wavelength (nm, vacuum)
-    cakLam=393.369#393.485 #    #Ca II K line wavelength (nm, vacuum)
+    cahLam=396.847# 396.967 #   #Ca II H line wavelength (nm, vacuum)
+    cakLam=393.366#393.485 #    #Ca II K line wavelength (nm, vacuum)
     
     #center of blue continuum band (nm, vacuum)
     lamB=390.2176-.116#subtraction is the offset from our lab values     
@@ -172,7 +186,7 @@ def calc_shk(lamGrid, targOlapf, rvcc, teff=6200., idl=''):
     #print('pl')
     #print(abs(plFactor-idl['plfactor']))
     #TODO FIND WORKING PYTHON PLANK FUNCTION
-    from hk_windows import PlanckFunc as planck
+    
     plFactor = planck(lamB*10,teff)/planck(lamR*10,teff)
     #print('plfactor: '+ str(plFactor))
         #0.977753 #SO HACKED, TODO DOES THIS CHANGE??
@@ -181,7 +195,7 @@ def calc_shk(lamGrid, targOlapf, rvcc, teff=6200., idl=''):
     num = (fh+fk)*gain
     den = (fr+fb)*gain
     shk = kk*(fh+fk)/(fr+fb)
-    print("shk: "+ str(shk))
+    #print("shk: "+ str(shk))
     if idl!='' :
         print("error vs idl; "+str(100*abs(shk-idl['shk'])/idl['shk']))
-    return shk
+    return shk, windows

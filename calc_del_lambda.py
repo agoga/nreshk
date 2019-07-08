@@ -71,12 +71,15 @@ def tmp_find_del_lam(labGrid, lab, tarGrid, targ, smooth) :
     
     tmpGridScale = 1
     dLam = tarGrid[1] - tarGrid[0]
-    
+    #print(np.shape(targ))
     gausdTarg = sc.ndimage.filters.gaussian_filter(targ,smooth/dLam)
+    
+    dLabLam = labGrid[1] - labGrid[0]
+    gausedLab = sc.ndimage.filters.gaussian_filter(lab,(dLam/dLabLam)/2.55)
     #print('degrading target: ' + str(smooth/dLam))
 
     #get the lab spectrum into angs div by 10 on angstrom grid for our purposes
-    interpfunc = interpolate.interp1d(labGrid/10, lab, kind='linear')#,fill_value='extrapolate')
+    interpfunc = interpolate.interp1d(labGrid, gausedLab, kind='linear')#,fill_value='extrapolate')
     labInterp=interpfunc(tarGrid)
 
 
@@ -108,50 +111,65 @@ def tmp_find_del_lam(labGrid, lab, tarGrid, targ, smooth) :
     #plt.xlabel('wavelength')
     #plt.ylabel('smoothed spectras')
 
+    #do not consider 0's while taking mean
     labInterp[labInterp==0]=np.nan
     targ[targ==0]=np.nan
+    
+    rmsx = np.nanmean(labInterp)
+    rmsy =  np.nanmean(targ)
 
-
-
-    rmsx =  np.nanmean(labInterp)
-    rmsy =   np.nanmean(targ)
-
-
+    #place the 0's back
     labInterp[np.isnan(labInterp)]=0
     targ[np.isnan(targ)]=0
 
 
 
 
-
+    #plt.figure(figsize=(12,6))
+    #plt.plot(1000*labInterp[targ!=0]-rmsx,'k-')
+    #plt.plot(targ[targ!=0]-rmsy,'g-')
+    #plt.show()
+    #plt.close()
+    
     #THIS IS THE CROSS CORRELATION SECTION
     ##
     ##
     #print('valid return: ')
     #print(np.correlate(convoldTarg,pikapika-rmsx,'valid'))
-    out = np.correlate(targ[targ!=0]-rmsy,labInterp[targ!=0]-rmsx,'full')
+    correlation = np.correlate(targ[targ!=0]-rmsy,(labInterp[targ!=0]-rmsx),'full')
+    middle = int((len(correlation)-1)/2)
+    
+    width = 50#TODO needs to be a grid based setting
+    
+##PRE VACAY
+    #import numpy.polynomial.polynomial as poly
+    #x = np.arange(len(correlation))
+    #corFun = poly.polyfit(x, correlation,2)
+    #ffit = poly.polyval(x, corFun)
+   # 
+    #plt.figure()
+    #plt.plot(x, ffit)
+    #plt.plot(range(len(correlation)), correlation, 'k-', color='blue')
+    #plt.show()
+    #plt.close()
+    mval = middle-width+np.argmax(correlation[middle-width:middle+width])
+   # mval = np.argmax(ffit)
+    #print(mval)
+    #print(np.argmax(ffit))
+    #mval=np.argmax(ffit)
+    minim =  np.argmin(correlation[middle-width:middle+width])
 
-    mval = np.argmax(out)
-    minim =  np.argmin(out)
-   # if abs(min(out)) > abs(max(out)):
-       # mval = minim
-        #print('min actually')
-
+    #mval=np.argmax(out)
     #print((mval-len(out)/2))
     #find the half 
-    offset = (mval-(len(out)-1)/2)*(tarGrid[1]-tarGrid[0])
-    print('offset: ' + str(offset))
+    offset = (mval-middle)*(tarGrid[1]-tarGrid[0])
+    #print('offset: ' + str(offset))
     ##
     ##
     ##
 
-
-
-    #NOW PLOTS
-   #plt.figure(figsize=(12,6))
-   # plt.plot(range(len(out)), out, 'k-', color='blue')
-   # plt.xlabel('offset')
-   # plt.ylabel('correlation')
+    
+    
    # #tmpMax = np.argmax(out)
     #print('index of maximum: ' + str(tmpMax) + ' and adjusted delLam: ' + str(tmpMax/len(out)))
     #print(out)
@@ -163,11 +181,137 @@ def tmp_find_del_lam(labGrid, lab, tarGrid, targ, smooth) :
     #plt.plot(tarGrid-offset, gausdTarg, 'k-',color='green')
     #SCALE JUST FOR VIEWING
     #plt.plot(tarGrid, labInterp*tmpGridScale, 'k-')
-    #plt.show()
-    #plt.close()
-    return offset,targ,labInterp
+    plt.show()
+    plt.close()
+    return offset,targ,labInterp,gausdTarg
 
     #shk = calc_shk(lamGrid, targOlapf, 17. )
+    
+    
+    
+    
+    
+    
+def pdf_from_data(bGrid, base, oGrid, obs, flat, windows, path, descript, width=1):
+    import numpy as np
+    from matplotlib import pyplot as plt
+    from helpers import mkdir_p
+    from matplotlib.backends.backend_pdf import PdfPages
+    import matplotlib.gridspec as gridspec
+    import scipy as sc
+    
+    calH = 396.847#TODO and make global
+    calK = 393.366
+    #center of red continuum band (nm, vacuum)
+    lamR=400.2204-.116#TODO TAKE FROM VAUGHAN 1978 subtraction is the offset from our lab values 
+    
+    
+    smooth = .01
+    
+    hColor = 'dodgerblue'
+    kColor = 'turquoise'
+    
+
+    fig, ax = plt.subplots(figsize=(10,10))
+    plt.ticklabel_format(useOffset=False)
+    with PdfPages(path+descript+"_report.pdf") as curPdf:
+        gs = gridspec.GridSpec(4, 3)
+        
+        targPlt = plt.subplot(gs[2,:])
+        smoothedPlt = plt.subplot(gs[1,:])
+        flatPlt = plt.subplot(gs[3,:])
+        kPlt = plt.subplot(gs[0,0])
+        hPlt = plt.subplot(gs[0,1])
+        rPlt =plt.subplot(gs[0,2])
+        
+        hPlt.ticklabel_format(useOffset=False)
+        kPlt.ticklabel_format(useOffset=False)
+        rPlt.ticklabel_format(useOffset=False)
+        targPlt.ticklabel_format(useOffset=False)
+        flatPlt.ticklabel_format(useOffset=False)
+        smoothedPlt.ticklabel_format(useOffset=False)
+        
+        
+        hPlt.tick_params(axis='both',which= 'major', labelsize=7)
+        kPlt.tick_params(axis='both',which= 'major', labelsize=7)
+        rPlt.tick_params(axis='both',which= 'major', labelsize=7)
+        targPlt.tick_params(axis='both',which= 'major', labelsize=7)
+        flatPlt.tick_params(axis='both',which= 'major', labelsize=7)
+        smoothedPlt.tick_params(axis='both',which= 'major', labelsize=7)
+        
+        kPlt.set_xlabel("Wavelength(nm)")
+        hPlt.set_ylabel("Irradiance")
+        
+        hPlt.set_title("Cal-H window")
+        kPlt.set_title("Cal-K window")
+        rPlt.set_title("Red band window")
+        
+        targPlt.set_title("Target overlap shifted over lab spectra")
+        targPlt.set_xlabel("Wavelength(nm)")
+        targPlt.set_ylabel("Irradiance scaled")
+        
+        smoothedPlt.set_title("Lab and target smoothed by " + str(smooth*2.355) + " nm Kernal")
+        smoothedPlt.set_xlabel("Wavelength(nm)")
+        smoothedPlt.set_ylabel("Irradiance scaled")
+        
+        flatPlt.set_title("Flat plot")
+        flatPlt.set_xlabel("Wavelength(nm)")
+        flatPlt.set_ylabel("Irradiance")
+        
+        cur=windows[:,0]
+        hkWidth=.109 +.005
+        rWidth =1+.05
+        
+        hPlt.axvline(x=calH,color=hColor)
+        hPlt.plot(oGrid[cur!=0],obs[cur!=0],'b-')
+        hPlt.set_xlim(calH-hkWidth,calH+hkWidth)
+        
+        cur=windows[:,1]
+        kPlt.axvline(x=calK,color=kColor)
+        kPlt.plot(oGrid[cur!=0],obs[cur!=0],'b-')
+        kPlt.set_xlim(calK-hkWidth,calK+hkWidth)
+
+        cur=windows[:,2]
+        rPlt.plot(oGrid[cur!=0],obs[cur!=0])
+        rPlt.set_xlim(lamR-rWidth, lamR+rWidth)
+        
+        rMin = oGrid[cur!=0][0]
+        rMax = oGrid[cur!=0][-1]
+       #print('rmin: ' + str(rMin) + ' rMax: ' + str(rMax))
+        #terrrrible way to get scale fixxxxxxx
+        scale = obs[cur!=0]/base[cur!=0]
+        avgS = np.mean(scale)
+        targPlt.set_xlim([391.5,407])
+        targPlt.axvline(x=calH,color=hColor)
+        targPlt.axvline(x=calK,color=kColor)
+        targPlt.axvline(x=rMin, color='red')
+        targPlt.axvline(x=rMax, color='red')
+        targPlt.plot(bGrid[base!=0],base[base!=0]*avgS,color='lightgray')
+        targPlt.plot(oGrid[obs!=0],obs[obs!=0],'b-')
+        
+        
+        dOLam = oGrid[1]-oGrid[0]
+        dBLam = bGrid[1]-bGrid[0]
+        gdObs = sc.ndimage.filters.gaussian_filter(obs,smooth/dOLam)
+        gdBase =  sc.ndimage.filters.gaussian_filter(base,smooth/dBLam)
+        
+        scale = obs[cur!=0]/base[cur!=0]
+        avgS = np.mean(scale)
+        smoothedPlt.set_xlim([391.5,407])
+        smoothedPlt.axvline(x=calH,color=hColor)
+        smoothedPlt.axvline(x=calK,color=kColor)
+        smoothedPlt.axvline(x=rMin, color='red')
+        smoothedPlt.axvline(x=rMax, color='red')
+        smoothedPlt.plot(bGrid[gdBase!=0],gdBase[gdBase!=0]*avgS,color='lightgray')
+        smoothedPlt.plot(oGrid[gdObs!=0],gdObs[gdObs!=0],'b-')
+        
+        
+        flatPlt.plot(bGrid[flat!=0], flat[flat!=0], 'k-')
+        
+        plt.tight_layout()
+        plt.close()
+        
+        curPdf.savefig(fig)
     
 ##    
 ##    
@@ -179,21 +323,23 @@ def tmp_find_del_lam(labGrid, lab, tarGrid, targ, smooth) :
 #adj is the adjusted data whos differences against base we want
 #regions is a list of lamda values to find differences in
 #
-def lamda_zoom(bGrid, base, oGrid, obs, regions, descript, width=1):
+def lamda_zoom(bGrid, base, oGrid, obs, regions, path, descript, width=1):
     import numpy as np
     from matplotlib import pyplot as plt
     from hk_windows import mkdir_p
-    
+    from matplotlib.backends.backend_pdf import PdfPages
+
     numRegions = len(regions)
     #fig index is the pass to subplot which shows shape of figure, this is for a tall skinny figure
     #ex 8 regions we want the index to start at 811 for first figure
     #812 will be second etc.
     figIndex = 100*numRegions + 11
-    plt.figure(1,figsize=(12,10*numRegions))
+    fig = plt.figure(1,figsize=(12,10*numRegions))
     
     obsLam = []
     baseLam = []
     yBuffer = 50
+    #with PdfPages('multipage_pdf.pdf') as pdf:
     for l in regions:
         plt.subplot(figIndex)
         figIndex += 1
@@ -237,30 +383,42 @@ def lamda_zoom(bGrid, base, oGrid, obs, regions, descript, width=1):
         
     
     #create pdf too 
-    mkdir_p("images/" + descript.split('/')[0])
-    fileStr = "images/" + descript + "_zoom.pdf"
+    #mkdir_p("images/" + path+ descript.split('/')[0])
+    #fileStr = "images/" + path+ descript + "_zoom.pdf"
     plt.tight_layout()
-    plt.savefig(fileStr)
+    curPdf.savefig(fig)
     
     plt.close(1)
     
-    plt.figure()
+    fig = plt.figure()
     plt.plot(np.asarray(baseLam),np.asarray(baseLam)-np.asarray(obsLam), 'ko')
     plt.xlabel('lab frame lambda')
     plt.ylabel('lab lam - obs lam')
-    fileStr = "images/" + descript + "_error_graph.pdf"
+    #fileStr = "images/" +path+ descript + "_error_graph.pdf"
     plt.tight_layout()
-    plt.savefig(fileStr)
+    #curPdf.savefig(fig)
+    #plt.savefig(fileStr)
     #plt.show()
     plt.close()
     
-    plt.figure(figsize=(12,6))
+    fig = plt.figure(figsize=(12,6))
     for l in baseLam:
         plt.axvline(l, color='red')
         
     #only plot non-zero values    
     plt.plot(bGrid[base!=0],base[base!=0]*avgS,'k-',oGrid[obs!=0],obs[obs!=0],'g-')
-    fileStr = "images/" + descript + "_wide_view.pdf"
+    fileStr = "images/" + path+descript + "_wide_view.pdf"
     plt.tight_layout()
-    plt.savefig(fileStr)
+    #plt.savefig(fileStr)
+    #curPdf.savefig(fig)
+    plt.close()
+    
+    fig = plt.figure()
+    fileStr = "images/" + path+descript + "_targOlapf.pdf"
+    plt.plot(oGrid, obs, 'k-')
+    plt.xlabel('wavelength [nm]')
+    plt.ylabel('tragOlapf')
+    plt.tight_layout()
+    #plt.savefig(fileStr)
+    #curPdf.savefig(fig)
     plt.close()
