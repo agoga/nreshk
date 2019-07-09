@@ -23,8 +23,7 @@ def mk_flatolap(lam, flat, idl=''):
 
 
 
-    ##intializations and hardcoded inputs
-    ##TODO take command line input???
+    ##intializations and hardcoded inputs TODO fix hardcoded?
     ##mk_flatolap
     lamRan=[380.,420.]
     dLam =0.001
@@ -62,16 +61,12 @@ def mk_flatolap(lam, flat, idl=''):
         dLambx[:,y] = np.gradient(lam[:,y]) 
         scale[:,y] =  dLambx[:,y]/dLambx[int(nx/2),y]
 
-    #print(dLambx[:,0])
-    #print(scale[:,0]) 
-
 
     #brown 
     #isolate the desired orders, set contents to zero outside boundaries.
+    
 
-
-
-    #TODOmnad;lsad;lsadksadjkl transpose hack blargggggggg
+    #TODO mnad;lsad;lsadksadjkl transpose hack blargggggggg
     gFlat = np.transpose(flat[0,gOrd,:])
     sgFlat = np.zeros((nx,nGord),dtype=np.float64)
     #print(np.shape(gFlat))
@@ -95,13 +90,11 @@ def mk_flatolap(lam, flat, idl=''):
     #https://stackoverflow.com/questions/18326714/idl-interpol-equivalent-for-python
     from scipy import interpolate
 
+    #need extrapolate likely due to edge cases of lamda grid not being perfectly aligned. 
+    #since linear spacing should be fine?
     for i in range(len(gOrd)) :
         interpfunc = interpolate.interp1d(lam[:,gOrd[i]],sgFlat[:,i], kind='linear', fill_value='extrapolate')
         flatOlap = flatOlap+interpfunc(lamGrid)
-
-
-    #if any(i > 0 for i in flatOlap) :
-     #   print('gotya')
 
     #brown
     #make output data array -- [lambda,flatolap].  Write it out.
@@ -118,26 +111,16 @@ def mk_flatolap(lam, flat, idl=''):
     #curPdf.savefig(fig)
     #plt.close()
 
-    #PLOT TEST IDL FLAT DATA
+
 
     #idlHdu = astropy.io.fits.open(idlfilepath+idlFlatFile)
     if idl != '':
         idlData = idl['flatolap']#idlHdu[0].data[1]#
         plt.plot(lamGrid, idlData, 'k-', color='blue')
         plt.plot(lamGrid, abs(flatOlap-idlData), color='green')
+        
+        
     ##OUTPUTS
     #lamGrid-the x val of all these plots
     #flatOlap-the overlapped flat on these ranges
-    #
-    #
-    #max error BUGGED
-    #idlFlat=data[1]
-    #maxim = 0
-    #for i in range(len(idlFlat)) :
-    #    if idlFlat[i] > 0 :
-    #        bla = abs(flatOlap[i]-idlFlat[i])
-    #        bla = bla/idlFlat[i]
-    #        maxim = max(maxim,bla)
-    #print('max error')
-    #print(maxim)
     return lamGrid, flatOlap

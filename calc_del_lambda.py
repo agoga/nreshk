@@ -10,6 +10,7 @@ def import_lab_frame_spectra(fluxdir, minwl=None, maxwl=None, resolution=1, resi
     import scipy
     import scipy.signal
     import scipy.ndimage.filters
+    import helpers as h#for constants
     
     
     wavelength = []
@@ -56,11 +57,14 @@ def import_lab_frame_spectra(fluxdir, minwl=None, maxwl=None, resolution=1, resi
     
     
 #############################################
+#TODO DESCPT
 def tmp_find_del_lam(labGrid, lab, tarGrid, targ, smooth) :
 
+    #TODO DO WE NEED ALL THESE
     import scipy as sc
     #import astropy.io.fits
     import numpy as np
+    import helpers as h#for constants
     #import os
     #from calc_shk import calc_shk
     #from calc_shk import calc_targOlapf
@@ -75,8 +79,9 @@ def tmp_find_del_lam(labGrid, lab, tarGrid, targ, smooth) :
     gausdTarg = sc.ndimage.filters.gaussian_filter(targ,smooth/dLam)
     
     dLabLam = labGrid[1] - labGrid[0]
+    
+    #TODO SHOULD 2.55 be h.sigToFWHM?
     gausedLab = sc.ndimage.filters.gaussian_filter(lab,(dLam/dLabLam)/2.55)
-    #print('degrading target: ' + str(smooth/dLam))
 
     #get the lab spectrum into angs div by 10 on angstrom grid for our purposes
     interpfunc = interpolate.interp1d(labGrid, gausedLab, kind='linear')#,fill_value='extrapolate')
@@ -85,12 +90,11 @@ def tmp_find_del_lam(labGrid, lab, tarGrid, targ, smooth) :
 
 
     #ZERO OUT THE EDGES OF OUR LAB SPECTRA
+    #TODO do this with strict values to remove edge errors affecting correlation
     #from 0 to first nonzero element of targolap
     labInterp[:targ.nonzero()[0][0]]=0
     #from last nonzero element to end
     labInterp[targ.nonzero()[0][-1]:]=0
-
-
 
 
     #tmp = np.convolve(targOlapf,pikapika,'same')
@@ -133,40 +137,50 @@ def tmp_find_del_lam(labGrid, lab, tarGrid, targ, smooth) :
     
     #THIS IS THE CROSS CORRELATION SECTION
     ##
-    ##
-    #print('valid return: ')
-    #print(np.correlate(convoldTarg,pikapika-rmsx,'valid'))
+    ##correlate must have same sized arrays input
     correlation = np.correlate(targ[targ!=0]-rmsy,(labInterp[targ!=0]-rmsx),'full')
+    #length of the correlation array is length input array times 2 plus 1
+    #if the two arrays are already aligned then the peak of correlation function should be middle
     middle = int((len(correlation)-1)/2)
     
+    #width is used for local maximum finding
     width = 50#TODO needs to be a grid based setting
+    #needs to be like 50 for smarts and like 250 for nres
     
-##PRE VACAY
-    #import numpy.polynomial.polynomial as poly
-    #x = np.arange(len(correlation))
-    #corFun = poly.polyfit(x, correlation,2)
-    #ffit = poly.polyval(x, corFun)
-   # 
+
+    
+    #max value is the index of the maximum value(local max around middle of array if width used)
+    mval = middle-width+np.argmax(correlation[middle-width:middle+width])
+    
+    
+    ##PRE VACAY
+#want to make a quadratic to be more precise with 'peak' of correlation
+#need to do poly only in certain range around center because wings will take over the fit
+    fitWidth = 5
+    import numpy.polynomial.polynomial as poly
+    xRange = mval + np.arange(2*fitWidth)- fitWidth
+    polyFunc = np.polyfit(xRange, correlation[mval-fitWidth:mval+fitWidth],2)
+    #print(polyFunc)
+    #f=a*x^2 +b*x+c
+    #f' = 2*a*x+b = 0 -> x = -b/2a 
+    xVal = -polyFunc[1]/(2*polyFunc[0])
+    
+    #print(xVal)
+    #ffit = np.polyval(polyFunc,xRange)
     #plt.figure()
-    #plt.plot(x, ffit)
-    #plt.plot(range(len(correlation)), correlation, 'k-', color='blue')
+    #plt.xlim(mval-fitWidth*3,mval+fitWidth*3)
+    #plt.plot(xRange, ffit,'g-')
+    #plt.plot(range(len(correlation)), correlation, 'k-')
     #plt.show()
     #plt.close()
-    mval = middle-width+np.argmax(correlation[middle-width:middle+width])
-   # mval = np.argmax(ffit)
-    #print(mval)
-    #print(np.argmax(ffit))
-    #mval=np.argmax(ffit)
-    minim =  np.argmin(correlation[middle-width:middle+width])
-
-    #mval=np.argmax(out)
-    #print((mval-len(out)/2))
-    #find the half 
-    offset = (mval-middle)*(tarGrid[1]-tarGrid[0])
+    
+    #mval= np.argmax(ffit)
+    #the actual lamda offset is how far from middle we are in pixel space times the pixel to grid ratio
+    #
+    offset = (xVal-middle)*(tarGrid[1]-tarGrid[0])
     #print('offset: ' + str(offset))
     ##
-    ##
-    ##
+
 
     
     
@@ -181,37 +195,38 @@ def tmp_find_del_lam(labGrid, lab, tarGrid, targ, smooth) :
     #plt.plot(tarGrid-offset, gausdTarg, 'k-',color='green')
     #SCALE JUST FOR VIEWING
     #plt.plot(tarGrid, labInterp*tmpGridScale, 'k-')
-    plt.show()
-    plt.close()
+    #plt.show()
+    #plt.close()
     return offset,targ,labInterp,gausdTarg
-
-    #shk = calc_shk(lamGrid, targOlapf, 17. )
+   
     
     
-    
-    
-    
-    
-def pdf_from_data(bGrid, base, oGrid, obs, flat, windows, path, descript, width=1):
+##
+##TODO descripts
+def pdf_from_data(bGrid, base, oGrid, obs, flat, windows, shk, path, descript, width=1):
     import numpy as np
     from matplotlib import pyplot as plt
     from helpers import mkdir_p
     from matplotlib.backends.backend_pdf import PdfPages
     import matplotlib.gridspec as gridspec
     import scipy as sc
+    import helpers as h#for constants
     
-    calH = 396.847#TODO and make global
-    calK = 393.366
+    
+    calH = h.cahLam#396.847#TODO and make global
+    calK = h.cakLam#393.366
     #center of red continuum band (nm, vacuum)
-    lamR=400.2204-.116#TODO TAKE FROM VAUGHAN 1978 subtraction is the offset from our lab values 
+    
+    lamR=h.lamR#400.2204-.116#TODO TAKE FROM VAUGHAN 1978 subtraction is the offset from our lab values 
     
     
     smooth = .01
     
+    #colors for hk lines in each plot
     hColor = 'dodgerblue'
     kColor = 'turquoise'
     
-
+    
     fig, ax = plt.subplots(figsize=(10,10))
     plt.ticklabel_format(useOffset=False)
     with PdfPages(path+descript+"_report.pdf") as curPdf:
@@ -224,13 +239,13 @@ def pdf_from_data(bGrid, base, oGrid, obs, flat, windows, path, descript, width=
         hPlt = plt.subplot(gs[0,1])
         rPlt =plt.subplot(gs[0,2])
         
+        #please matplotlib don't make my stuff hard to read!
         hPlt.ticklabel_format(useOffset=False)
         kPlt.ticklabel_format(useOffset=False)
         rPlt.ticklabel_format(useOffset=False)
         targPlt.ticklabel_format(useOffset=False)
         flatPlt.ticklabel_format(useOffset=False)
         smoothedPlt.ticklabel_format(useOffset=False)
-        
         
         hPlt.tick_params(axis='both',which= 'major', labelsize=7)
         kPlt.tick_params(axis='both',which= 'major', labelsize=7)
@@ -239,6 +254,7 @@ def pdf_from_data(bGrid, base, oGrid, obs, flat, windows, path, descript, width=
         flatPlt.tick_params(axis='both',which= 'major', labelsize=7)
         smoothedPlt.tick_params(axis='both',which= 'major', labelsize=7)
         
+        #titles 
         kPlt.set_xlabel("Wavelength(nm)")
         hPlt.set_ylabel("Irradiance")
         
@@ -250,17 +266,19 @@ def pdf_from_data(bGrid, base, oGrid, obs, flat, windows, path, descript, width=
         targPlt.set_xlabel("Wavelength(nm)")
         targPlt.set_ylabel("Irradiance scaled")
         
-        smoothedPlt.set_title("Lab and target smoothed by " + str(smooth*2.355) + " nm Kernal")
+        smoothedPlt.set_title("Lab and target smoothed by " + str(smooth*h.sigToFWHM) + " nm Kernal")
         smoothedPlt.set_xlabel("Wavelength(nm)")
         smoothedPlt.set_ylabel("Irradiance scaled")
         
-        flatPlt.set_title("Flat plot")
+        flatPlt.set_title("Flat plot for target with shk: " + str(shk))
         flatPlt.set_xlabel("Wavelength(nm)")
         flatPlt.set_ylabel("Irradiance")
         
+        #H/K/Red band plots zoomed
+        #use exactly the windows that are gotten from hk_windows plus small buffer
         cur=windows[:,0]
-        hkWidth=.109 +.005
-        rWidth =1+.05
+        hkWidth=h.lineWid + .005
+        rWidth =h.conWid/2 +.05
         
         hPlt.axvline(x=calH,color=hColor)
         hPlt.plot(oGrid[cur!=0],obs[cur!=0],'b-')
@@ -275,6 +293,9 @@ def pdf_from_data(bGrid, base, oGrid, obs, flat, windows, path, descript, width=
         rPlt.plot(oGrid[cur!=0],obs[cur!=0])
         rPlt.set_xlim(lamR-rWidth, lamR+rWidth)
         
+        
+        #Targolapf plot 
+        #get red lines from windows funct too
         rMin = oGrid[cur!=0][0]
         rMax = oGrid[cur!=0][-1]
        #print('rmin: ' + str(rMin) + ' rMax: ' + str(rMax))
@@ -289,7 +310,7 @@ def pdf_from_data(bGrid, base, oGrid, obs, flat, windows, path, descript, width=
         targPlt.plot(bGrid[base!=0],base[base!=0]*avgS,color='lightgray')
         targPlt.plot(oGrid[obs!=0],obs[obs!=0],'b-')
         
-        
+        #smoothed target and lab plot
         dOLam = oGrid[1]-oGrid[0]
         dBLam = bGrid[1]-bGrid[0]
         gdObs = sc.ndimage.filters.gaussian_filter(obs,smooth/dOLam)
@@ -305,7 +326,7 @@ def pdf_from_data(bGrid, base, oGrid, obs, flat, windows, path, descript, width=
         smoothedPlt.plot(bGrid[gdBase!=0],gdBase[gdBase!=0]*avgS,color='lightgray')
         smoothedPlt.plot(oGrid[gdObs!=0],gdObs[gdObs!=0],'b-')
         
-        
+        #flat/other plot
         flatPlt.plot(bGrid[flat!=0], flat[flat!=0], 'k-')
         
         plt.tight_layout()
@@ -316,7 +337,7 @@ def pdf_from_data(bGrid, base, oGrid, obs, flat, windows, path, descript, width=
 ##    
 ##    
 ##    
-##    
+##    DEPRECATED FUNCTION REMOVE SOON
 ##
 #grid is the x val grid to plot against
 #base is the base data we are comparing against

@@ -1,16 +1,54 @@
+c=2.99792458e5  #speed of light (km/s)
+
+cahLam=396.847# 396.967 #   #Ca II H line wavelength (nm, vacuum)
+cakLam=393.366#393.485 #    #Ca II K line wavelength (nm, vacuum)
+
+
+#center of blue continuum band (nm, vacuum)
+lamB=390.2176-.116#subtraction is the offset from our lab values     
+#center of red continuum band (nm, vacuum)
+#TODO TAKE FROM VAUGHAN 1978 subtraction is the offset from our lab values 
+lamR=400.2204-.116#subtraction is the offset from our lab values  
+
+conWid=2.0         #wavelength width of continuum bands (nm, vacuum)
+lineWid=.109       #FWHM of line core window functions (nm, vacuum)
+    
+sigToFWHM = 2.355
 def hk_windows(rvcc,lamGrid,cahLam,cakLam,lamB,lamR):
     import numpy as np
-    
-    
-    c=2.99792458e5  #speed of light (km/s)
-        
-    conWid=2.0         #wavelength width of continuum bands (nm, vacuum)
-    lineWid=.109       #FWHM of line core window functions (nm, vacuum)
     
     #brown
     #make output array
     nLam = len(lamGrid)
     windows = np.zeros((nLam,3),dtype=np.float32)
+    z = 1. +rvcc/c
+    
+    #brown
+    #make window functions
+    d0 = abs(lamGrid-cahLam*z)/lineWid
+    s = (d0<=1.0).nonzero()
+    if len(s) > 0:
+        windows[s,0]=1.-d0[s] 
+    
+    d1 = abs(lamGrid-cakLam*z)/lineWid
+    s = (d1<=1.0).nonzero()
+    if len(s) > 0:
+        windows[s,1]=1.-d1[s] 
+    
+    d2 = abs(lamGrid-lamR*z)*2./conWid
+    s = (d2<=1.0).nonzero()
+    if len(s) > 0:
+        windows[s,2]=1.
+    return windows, lamB, lamR
+
+#smarts specific
+def smart_hk_windows(rvcc,lamGrid,cahLam,cakLam,lamB,lamR):
+    import numpy as np
+    
+    #brown
+    #make output array
+    nLam = len(lamGrid)
+    windows = np.zeros((nLam,4),dtype=np.float32)
     z = 1. +rvcc/c
     
     #brown
@@ -25,12 +63,17 @@ def hk_windows(rvcc,lamGrid,cahLam,cakLam,lamB,lamR):
     d1 = abs(lamGrid-cakLam*z)/lineWid
     s = (d1<=1.0).nonzero()
     if len(s) > 0:
-       windows[s,1]=1.-d1[s] 
+        windows[s,1]=1.-d1[s] 
     
     d2 = abs(lamGrid-lamR*z)*2./conWid
     s = (d2<=1.0).nonzero()
     if len(s) > 0:
-       windows[s,2]=1.
+        windows[s,2]=1.
+    
+    d3 = abs(lamGrid-lamB*z)*2./conWid
+    s = (d3<=1.0).nonzero()
+    if len(s) > 0:
+        windows[s,3]=1.
     return windows, lamB, lamR
 
 #https://stackoverflow.com/questions/11373610/save-matplotlib-file-to-a-directory
