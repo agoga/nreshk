@@ -114,15 +114,14 @@ def PlanckFunc (wl , T ) :
 def bad_spec_detection(lamGrid, targ):
     
     import scipy as sc
-    #import astropy.io.fits
+    
     import numpy as np
-    #import os
-    #from calc_shk import calc_shk
-    #from calc_shk import calc_targOlapf
-    #from mk_flatolap import mk_flatolap
+
     from matplotlib import pyplot as plt
-    low = np.abs(lamGrid - 392).argmin()
-    high =np.abs(lamGrid - 407).argmin()
+    
+    
+    lowI = np.abs(lamGrid - 392).argmin()
+    highI =np.abs(lamGrid - 407).argmin()
     bad = True
     width = 1000
     
@@ -131,26 +130,32 @@ def bad_spec_detection(lamGrid, targ):
     
     #print('low: ' + str(low) + ' high: ' + str(high))
     gausdTarg = sc.ndimage.filters.gaussian_filter(targ,.15/dLam)
-    newLook = gausdTarg[low:high]
+    newLook = gausdTarg[lowI:highI]
+    adjLam = lamGrid[lowI:highI]
+    #fig = plt.figure()
+    #plt.plot(adjLam, newLook, 'k-')
+    #plt.show()
+    #plt.close()
     first = int(np.nanargmin(newLook))
     
     
     newLook[first-width:first+width] = np.nan
     
-    second = int(np.nanargmin(newLook[low:high]))
+    second = int(np.nanargmin(newLook))
     
-    print('first: ' + str(first) + ' second: ' + str(second))
+    #print('first: ' + str(first) + ' second: ' + str(second))
 
     
-    fig = plt.figure()
-    plt.axvline(x=lamGrid[low],color='r')
-    plt.axvline(x=lamGrid[high],color='r')
-    
-    plt.axvline(x=lamGrid[first],color='b')
-    plt.axvline(x=lamGrid[second],color='b')
-    plt.plot(lamGrid[low:high], newLook[low:high], 'k-')
-    plt.show()
-    plt.close(fig)
-    
-    
+    #fig = plt.figure()
+    #plt.axvline(x=adjLam[0],color='r')
+    #plt.axvline(x=adjLam[-1],color='r')
+   # 
+   #plt.axvline(x=adjLam[first],color='b')
+    #plt.axvline(x=adjLam[second],color='b')
+    #plt.plot(adjLam, newLook, 'k-')
+    #plt.show()
+    #plt.close()
+    trueSpace = abs(cahLam - cakLam + .1)
+    if abs(adjLam[second] - adjLam[first]) <= trueSpace:
+        bad = False
     return bad

@@ -119,8 +119,8 @@ def calc_targOlapf(lamGrid, lam, extrct, flatOlap, label, idl=''):
     #plt.plot(lamGrid, targOlapf, 'k-')
     #plt.xlabel('wavelength [nm]')
     #plt.ylabel('tragOlapf')
-    #curPdf.savefig(fig)
-   # plt.close()
+    #plt.show()
+    #plt.close()
     
     return targOlapf
     
@@ -183,7 +183,10 @@ def calc_shk(lamGrid, targOlapf, rvcc, teff=6200., idl=''):
     #print(abs(plFactor-idl['plfactor']))
     #TODO FIND WORKING PYTHON PLANK FUNCTION
     
-    plFactor = planck(h.lamB*10,teff)/planck(h.lamR*10,teff)
+    from astropy.modeling.blackbody import blackbody_lambda
+    from astropy import units as u
+    
+    plFactor = blackbody_lambda(h.lamB*u.nm,teff*u.K).value/blackbody_lambda(h.lamR*u.nm,teff*u.K).value
     #print('plfactor: '+ str(plFactor))
         #0.977753 #SO HACKED, TODO DOES THIS CHANGE??
     fb = fr*plFactor
@@ -194,7 +197,7 @@ def calc_shk(lamGrid, targOlapf, rvcc, teff=6200., idl=''):
     #print("shk: "+ str(shk))
     if idl!='' :
         print("error vs idl; "+str(100*abs(shk-idl['shk'])/idl['shk']))
-    return shk, windows
+    return shk, windows, fr/fb
 
 #smarts specific
 def smart_calc_shk(lamGrid, targOlapf, rvcc, teff=6200., idl=''):
@@ -254,7 +257,10 @@ def smart_calc_shk(lamGrid, targOlapf, rvcc, teff=6200., idl=''):
     #print(abs(plFactor-idl['plfactor']))
     #TODO FIND WORKING PYTHON PLANK FUNCTION
     
-    plFactor = planck(h.lamB*10,teff)/planck(h.lamR*10,teff)
+    from astropy.modeling.blackbody import blackbody_lambda
+    from astropy import units as u
+    
+    #plFactor = blackbody_lambda(h.lamB*u.nm,teff*u.K).value/blackbody_lambda(h.lamR*u.nm,teff*u.K).value
     #print('plfactor: '+ str(plFactor))
         #0.977753 #SO HACKED, TODO DOES THIS CHANGE??
     #fb = fr*plFactor

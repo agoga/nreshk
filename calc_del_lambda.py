@@ -143,9 +143,11 @@ def tmp_find_del_lam(labGrid, lab, tarGrid, targ, smooth) :
     #if the two arrays are already aligned then the peak of correlation function should be middle
     middle = int((len(correlation)-1)/2)
     
+    
     #width is used for local maximum finding
-    width = 50#TODO needs to be a grid based setting
-    #needs to be like 50 for smarts and like 250 for nres
+    #1 is a number that worked here for smarts and NRES data. MAY NEED TO BE ADJUSTED
+    width = int(1/dLam)#TODO needs to be a grid based setting
+
     
 
     
@@ -203,7 +205,7 @@ def tmp_find_del_lam(labGrid, lab, tarGrid, targ, smooth) :
     
 ##
 ##TODO descripts
-def pdf_from_data(bGrid, base, oGrid, obs, flat, windows, shk, path, descript, width=1):
+def pdf_from_data(bGrid, base, oGrid, obs, windows, title, path, descript, flat='', width=1):
     import numpy as np
     from matplotlib import pyplot as plt
     from helpers import mkdir_p
@@ -219,6 +221,20 @@ def pdf_from_data(bGrid, base, oGrid, obs, flat, windows, shk, path, descript, w
     
     lamR=h.lamR#400.2204-.116#TODO TAKE FROM VAUGHAN 1978 subtraction is the offset from our lab values 
     
+    #if flat was passed as empty, fill it with nans
+    if len(flat) == 0:
+        flat = np.full(len(bGrid),0)
+        
+    flatMax = max(flat)    
+    
+    if flatMax != 0:
+        #create a bool array which describes in our grid sections of the flat which higher than .4th of flat max
+        #print(flatMax)
+        flatSection = flat/flatMax >= .4
+
+        #used to set axis bounds
+        mini = min(bGrid[flatSection])
+        maxi = max(bGrid[flatSection])
     
     smooth = .01
     
@@ -228,6 +244,7 @@ def pdf_from_data(bGrid, base, oGrid, obs, flat, windows, shk, path, descript, w
     
     
     fig, ax = plt.subplots(figsize=(10,10))
+    plt.suptitle(title)
     plt.ticklabel_format(useOffset=False)
     with PdfPages(path+descript+"_report.pdf") as curPdf:
         gs = gridspec.GridSpec(4, 3)
@@ -258,19 +275,19 @@ def pdf_from_data(bGrid, base, oGrid, obs, flat, windows, shk, path, descript, w
         kPlt.set_xlabel("Wavelength(nm)")
         hPlt.set_ylabel("Irradiance")
         
-        hPlt.set_title("Cal-H window")
-        kPlt.set_title("Cal-K window")
+        hPlt.set_title("Ca-H window")
+        kPlt.set_title("Ca-K window")
         rPlt.set_title("Red band window")
         
-        targPlt.set_title("Target overlap shifted over lab spectra")
+        targPlt.set_title("Target overlap shifted over reference spectra")
         targPlt.set_xlabel("Wavelength(nm)")
         targPlt.set_ylabel("Irradiance scaled")
         
-        smoothedPlt.set_title("Lab and target smoothed by " + str(smooth*h.sigToFWHM) + " nm Kernal")
+        smoothedPlt.set_title("Reference and target smoothed by " + str(smooth*h.sigToFWHM) + " nm Kernel")
         smoothedPlt.set_xlabel("Wavelength(nm)")
         smoothedPlt.set_ylabel("Irradiance scaled")
         
-        flatPlt.set_title("Flat plot for target with shk: " + str(shk))
+        flatPlt.set_title("Flat plot for target")
         flatPlt.set_xlabel("Wavelength(nm)")
         flatPlt.set_ylabel("Irradiance")
         
@@ -302,13 +319,21 @@ def pdf_from_data(bGrid, base, oGrid, obs, flat, windows, shk, path, descript, w
         #terrrrible way to get scale fixxxxxxx
         scale = obs[cur!=0]/base[cur!=0]
         avgS = np.mean(scale)
-        targPlt.set_xlim([391.5,407])
+        
         targPlt.axvline(x=calH,color=hColor)
         targPlt.axvline(x=calK,color=kColor)
         targPlt.axvline(x=rMin, color='red')
         targPlt.axvline(x=rMax, color='red')
-        targPlt.plot(bGrid[base!=0],base[base!=0]*avgS,color='lightgray')
-        targPlt.plot(oGrid[obs!=0],obs[obs!=0],'b-')
+        
+        
+        if flatMax != 0:
+            targPlt.set_xlim([mini,maxi])
+            targPlt.plot(bGrid[flatSection],base[flatSection]*avgS,color='lightgray')
+            targPlt.plot(oGrid[flatSection],obs[flatSection],'b-')
+        else:
+            targPlt.set_xlim([391.5,407])
+            targPlt.plot(bGrid[base!=0],base[base!=0]*avgS,color='lightgray')
+            targPlt.plot(oGrid[obs!=0],obs[obs!=0],'b-')
         
         #smoothed target and lab plot
         dOLam = oGrid[1]-oGrid[0]
@@ -318,18 +343,28 @@ def pdf_from_data(bGrid, base, oGrid, obs, flat, windows, shk, path, descript, w
         
         scale = obs[cur!=0]/base[cur!=0]
         avgS = np.mean(scale)
-        smoothedPlt.set_xlim([391.5,407])
+        
+        
+        
         smoothedPlt.axvline(x=calH,color=hColor)
         smoothedPlt.axvline(x=calK,color=kColor)
         smoothedPlt.axvline(x=rMin, color='red')
         smoothedPlt.axvline(x=rMax, color='red')
-        smoothedPlt.plot(bGrid[gdBase!=0],gdBase[gdBase!=0]*avgS,color='lightgray')
-        smoothedPlt.plot(oGrid[gdObs!=0],gdObs[gdObs!=0],'b-')
+        
+        if flatMax != 0:
+            
+            smoothedPlt.set_xlim([mini,maxi])
+            smoothedPlt.plot(bGrid[flatSection],gdBase[flatSection]*avgS,color='lightgray')
+            smoothedPlt.plot(oGrid[flatSection],gdObs[flatSection],'b-')
+        else:
+            smoothedPlt.set_xlim([391.5,407])
+            smoothedPlt.plot(bGrid[gdBase!=0],gdBase[gdBase!=0]*avgS,color='lightgray')
+            smoothedPlt.plot(oGrid[gdObs!=0],gdObs[gdObs!=0],'b-')
         
         #flat/other plot
         flatPlt.plot(bGrid[flat!=0], flat[flat!=0], 'k-')
         
-        plt.tight_layout()
+        plt.tight_layout(rect=[0, 0.03, 1, 0.95])
         plt.close()
         
         curPdf.savefig(fig)
