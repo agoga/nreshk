@@ -147,13 +147,13 @@ def calc_shk(lamGrid, targOlapf, rvcc, teff=6200., idl=''):
     fk=(targOlapf*windows[:,1]).sum()
     fr=(targOlapf*windows[:,2]).sum()
     
-    mini = next((i for i, x in enumerate(windows[:,0]) if x), None)
-    maxi = [i for i, e in enumerate(windows[:,0]) if e != 0][-1]
+    #mini = next((i for i, x in enumerate(windows[:,0]) if x), None)
+    #maxi = [i for i, e in enumerate(windows[:,0]) if e != 0][-1]
     #print('lamMin H: '+ str(lamGrid[mini]))
     #print('lamMax H: '+ str(lamGrid[maxi]))
     
-    mini = next((i for i, x in enumerate(windows[:,1]) if x), None)
-    maxi = [i for i, e in enumerate(windows[:,1]) if e != 0][-1]
+    #mini = next((i for i, x in enumerate(windows[:,1]) if x), None)
+    #maxi = [i for i, e in enumerate(windows[:,1]) if e != 0][-1]
     #print('lamMin K: '+ str(lamGrid[mini]))
     #print('lamMax K: '+ str(lamGrid[maxi]))
     
@@ -169,19 +169,10 @@ def calc_shk(lamGrid, targOlapf, rvcc, teff=6200., idl=''):
     #plt.close()
     #plt.figure()
     #cur=windows[:,2]
-    ##plt.plot(lamGrid[cur!=0],targOlapf[cur!=0])#*cur[cur!=0],'k-')
+    #plt.plot(lamGrid[cur!=0],targOlapf[cur!=0])#*cur[cur!=0],'k-')
     #plt.show()
     #plt.close()
     
-    #print('fh')
-    #print(abs(fh-idl['fh']))
-    #print('fk')
-    #print(abs(fk-idl['fk']))
-    #print('fr')
-    #print(abs(fr-idl['fr']))
-    #print('pl')
-    #print(abs(plFactor-idl['plfactor']))
-    #TODO FIND WORKING PYTHON PLANK FUNCTION
     
     from astropy.modeling.blackbody import blackbody_lambda
     from astropy import units as u

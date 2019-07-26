@@ -11,7 +11,7 @@ def mk_flatolap(lam, flat, idl=''):
     #WORKING MK_FLATOLAP
     ##PORT OF DR. TIM BROWN'S NRES HK CODE 
     ##comments marked brown are Dr. Brown's
-
+    
     import numpy as np
     import scipy.io as sc
     import sys
@@ -32,6 +32,7 @@ def mk_flatolap(lam, flat, idl=''):
     nx=4096
     bounds=[[615,3803],[670,3770],[733,3740],[750,3660]]
 
+    bad = False
     #read filesfits
     #TRANSPOSE THE STRAIGHT DATA BC IDL CODE HAS REVERSED DIMENSIONS
     #TODO FIX THIS AND ALL ARRAY SHAPES TO FOLLOW PYTHON LOADING
@@ -72,6 +73,7 @@ def mk_flatolap(lam, flat, idl=''):
     #print(np.shape(gFlat))
     #print(np.shape(sgFlat))
 
+    stuff = []
     for i in range(len(gOrd)) :
         #bug cant do bounds[i,0] for some reason
         gFlat[0:bounds[i][0],i]=0
@@ -79,6 +81,14 @@ def mk_flatolap(lam, flat, idl=''):
         #BOX CAR SMOOTHING INSTEAD OF IDL SMOOTH()
         #https://joseph-long.com/writing/AstroPy-boxcar/
         sgFlat[:,i]=convolve(convolve(convolve(gFlat[:,i]*scale[:,i], Box1DKernel(25)), Box1DKernel(25)), Box1DKernel(25))
+        #fig = plt.figure()
+        #plot python data
+        #plt.plot(gFlat[:,i]*scale[:,i], 'k-')
+        #plt.ylabel('sgFlats')
+        #plt.show()
+        #plt.close()
+    
+    
 
     flatOlap = np.zeros(int(nLam),dtype=np.float64)    
 
@@ -103,12 +113,15 @@ def mk_flatolap(lam, flat, idl=''):
     #output[:,0] = lamGrid    
     #output[:,1] = flatOlap  
 
-    #fig = plt.figure()
+    #plt.figure(figsize=(30,5))
+    #plt.style.use('classic')
     #plot python data
-    #plt.plot(lamGrid, flatOlap, 'k-',color='red')
-    #plt.xlabel('wavelength [nm]')
+    #plt.plot(lamGrid, flatOlap, 'k-')
+    #plt.title('Orders 63-67 of flat field added togeather')
+    #plt.xlim([391.5,408])
+    ##plt.xlabel('wavelength [nm]')
     #plt.ylabel('flatOlap')
-    #curPdf.savefig(fig)
+    #plt.show()
     #plt.close()
 
 
@@ -119,8 +132,13 @@ def mk_flatolap(lam, flat, idl=''):
         plt.plot(lamGrid, idlData, 'k-', color='blue')
         plt.plot(lamGrid, abs(flatOlap-idlData), color='green')
         
+    #this returns to the pipeline that we have a bad flat    
+    if max(flatOlap) > 1.5:
+        print("bad flat detected mk_flatolap.py")
+        bad = True
+        #return [],[]
         
     ##OUTPUTS
     #lamGrid-the x val of all these plots
     #flatOlap-the overlapped flat on these ranges
-    return lamGrid, flatOlap
+    return lamGrid, flatOlap, bad

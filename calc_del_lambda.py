@@ -76,7 +76,7 @@ def tmp_find_del_lam(labGrid, lab, tarGrid, targ, smooth) :
     tmpGridScale = 1
     dLam = tarGrid[1] - tarGrid[0]
     #print(np.shape(targ))
-    gausdTarg = sc.ndimage.filters.gaussian_filter(targ,smooth/dLam)
+    gausdTarg = sc.ndimage.filters.gaussian_filter(targ,smooth/dLam/2)
     
     dLabLam = labGrid[1] - labGrid[0]
     
@@ -185,20 +185,51 @@ def tmp_find_del_lam(labGrid, lab, tarGrid, targ, smooth) :
 
 
     
-    
+    scale = np.mean(gausdTarg)/np.mean(labInterp)
+
+
    # #tmpMax = np.argmax(out)
     #print('index of maximum: ' + str(tmpMax) + ' and adjusted delLam: ' + str(tmpMax/len(out)))
     #print(out)
-    #plt.figure(figsize=(12,6))
-    #plt.plot(tarGrid, gausdTarg, 'k-', color='blue')
+    #fig, ax = plt.subplots(figsize=(25,5))
+    #ax.ticklabel_format(useOffset=False)
+    #plt.title("Unadjusted stellar spectra over reference spectra")
+    #plt.xlabel("Wavelength (nm)")
+    #plt.ylabel("Scaled irradiance")
+    #plt.xlim([392,398])
+    #plt.ylim([0,2200])
+    #plt.plot(tarGrid, gausdTarg, 'g-')
+    #plt.axvline(x=393.369, color='red')
+    #plt.axvline(x=396.85, color='red')
+    #plt.plot(tarGrid-offset, gausdTarg, 'k-',color='green')
+    #SCALE JUST FOR VIEWING
+    #plt.plot(tarGrid,labInterp*scale, 'k-')
+    #plt.show()
+    #plt.close()
+    
+    
+    
+    #fig, ax = plt.subplots(figsize=(25,5))
+    #ax.ticklabel_format(useOffset=False)
+    #plt.title("Correlated stellar spectra over reference spectra")
+    #plt.xlabel("Wavelength (nm)")
+    #plt.ylabel("Scaled irradiance")
+    
+    #plt.xlim([392,398])
+    #plt.ylim([0,2200])
+    
+    #plt.plot(tarGrid-offset, gausdTarg, 'g-')
     #plt.axvline(x=393.369, color='red')
     #plt.axvline(x=396.85, color='red')
 
     #plt.plot(tarGrid-offset, gausdTarg, 'k-',color='green')
     #SCALE JUST FOR VIEWING
-    #plt.plot(tarGrid, labInterp*tmpGridScale, 'k-')
+    #plt.plot(tarGrid,labInterp*scale, 'k-')
     #plt.show()
     #plt.close()
+    
+    
+    
     return offset,targ,labInterp,gausdTarg
    
     
@@ -365,116 +396,7 @@ def pdf_from_data(bGrid, base, oGrid, obs, windows, title, path, descript, flat=
         flatPlt.plot(bGrid[flat!=0], flat[flat!=0], 'k-')
         
         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+        #plt.show()
         plt.close()
         
         curPdf.savefig(fig)
-    
-##    
-##    
-##    
-##    DEPRECATED FUNCTION REMOVE SOON
-##
-#grid is the x val grid to plot against
-#base is the base data we are comparing against
-#adj is the adjusted data whos differences against base we want
-#regions is a list of lamda values to find differences in
-#
-def lamda_zoom(bGrid, base, oGrid, obs, regions, path, descript, width=1):
-    import numpy as np
-    from matplotlib import pyplot as plt
-    from hk_windows import mkdir_p
-    from matplotlib.backends.backend_pdf import PdfPages
-
-    numRegions = len(regions)
-    #fig index is the pass to subplot which shows shape of figure, this is for a tall skinny figure
-    #ex 8 regions we want the index to start at 811 for first figure
-    #812 will be second etc.
-    figIndex = 100*numRegions + 11
-    fig = plt.figure(1,figsize=(12,10*numRegions))
-    
-    obsLam = []
-    baseLam = []
-    yBuffer = 50
-    #with PdfPages('multipage_pdf.pdf') as pdf:
-    for l in regions:
-        plt.subplot(figIndex)
-        figIndex += 1
-        
-        #find the index range for the current wavelength with size of given width
-        bLowI=int(np.abs(bGrid-l+width/2).argmin())
-        bMaxI=int(np.abs(bGrid-l-width/2).argmin())
-        #for both since obs should be offset
-        oLowI=int(np.abs(oGrid-l+width/2).argmin())
-        oMaxI=int(np.abs(oGrid-l-width/2).argmin())
-        
-        #find index of minimum value in range of base and obs using the index
-        baseMin = np.argmin(base[bLowI:bMaxI])
-        obsMin = np.argmin(obs[oLowI:oMaxI])
-
-        baseLam.append((bGrid[bLowI+baseMin]))
-        obsLam.append(oGrid[oLowI+obsMin])
-        
-
-        #print('baseLam: '+ str(baseLam[-1]))
-        #print('obsLam: '+ str(obsLam))
-        #print('b - o: ' + str(baseLam[-1]-obsLam[-1]))
-        plt.xlim(baseLam[-1]-width/2,baseLam[-1]+width/2)
-
-        
-        plt.axvline(x=l,color='r')
-        plt.axvline(x=obsLam[-1],color='g', linestyle='dashed')
-        plt.axvline(x=baseLam[-1],color='k', linestyle='dashed')
-        #now do some dirty scaling(not perfect but probably good enough)
-        scale = obs[bLowI:bMaxI]/base[bLowI:bMaxI]
-        avgS = np.mean(scale)
-        
-        yMin = min(min(obs[oLowI:oMaxI]),min(avgS*base[bLowI:bMaxI]))
-        yMax = max(max(obs[oLowI:oMaxI]),max(avgS*base[bLowI:bMaxI]))
-        plt.ylim(yMin-yBuffer,yMax+yBuffer)
-        
-        #plt.axvline(x=396.847, color='red')
-        plt.plot(oGrid, obs,'g-',bGrid, base*avgS, 'k-')
-        plt.xlabel('nm')
-        plt.ylabel('scaled spectra')
-        
-    
-    #create pdf too 
-    #mkdir_p("images/" + path+ descript.split('/')[0])
-    #fileStr = "images/" + path+ descript + "_zoom.pdf"
-    plt.tight_layout()
-    curPdf.savefig(fig)
-    
-    plt.close(1)
-    
-    fig = plt.figure()
-    plt.plot(np.asarray(baseLam),np.asarray(baseLam)-np.asarray(obsLam), 'ko')
-    plt.xlabel('lab frame lambda')
-    plt.ylabel('lab lam - obs lam')
-    #fileStr = "images/" +path+ descript + "_error_graph.pdf"
-    plt.tight_layout()
-    #curPdf.savefig(fig)
-    #plt.savefig(fileStr)
-    #plt.show()
-    plt.close()
-    
-    fig = plt.figure(figsize=(12,6))
-    for l in baseLam:
-        plt.axvline(l, color='red')
-        
-    #only plot non-zero values    
-    plt.plot(bGrid[base!=0],base[base!=0]*avgS,'k-',oGrid[obs!=0],obs[obs!=0],'g-')
-    fileStr = "images/" + path+descript + "_wide_view.pdf"
-    plt.tight_layout()
-    #plt.savefig(fileStr)
-    #curPdf.savefig(fig)
-    plt.close()
-    
-    fig = plt.figure()
-    fileStr = "images/" + path+descript + "_targOlapf.pdf"
-    plt.plot(oGrid, obs, 'k-')
-    plt.xlabel('wavelength [nm]')
-    plt.ylabel('tragOlapf')
-    plt.tight_layout()
-    #plt.savefig(fileStr)
-    #curPdf.savefig(fig)
-    plt.close()
