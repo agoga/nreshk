@@ -19,11 +19,8 @@
 
 #the original calc_shk function has been split into calc_targOlapf and calc_shk to better 
 #debug intermediate values 
-def calc_targOlapf(lamGrid, lam, extrct, flatOlap, label, idl=''):
+def calc_targOlapf(lamGrid, lam, extrct, flatOlap, label):
     ##intializations and hardcoded inputs
-    ##TODO take command line input???
-    
-    #TODO do we need all this?
     import numpy as np
     import scipy.io as sc
     import sys
@@ -37,14 +34,14 @@ def calc_targOlapf(lamGrid, lam, extrct, flatOlap, label, idl=''):
 
     gOrd=[63,64,65,66]
     ngord=len(gOrd)
-    #sz=size(lam)#used to find nx TODO remove
+
     nx=4096#TODO BAD ADAM
     rdnoi=7.*np.sqrt(5.*5.)           # read noise per resolution element in e-
     resel=.0015                       #resolution element (nm)
 
     
 
-    #TODO FIX THIS AND ALL SO THAT IT FOLLOWS PYTHON DATA FORMAT
+    #TODO FIX THIS AND ALL SO THAT IT FOLLOWS PYTHON DATA FORMAT INSTEAD OF IDL 
     extrct = np.transpose(extrct)
     lam=np.transpose(lam)
 
@@ -69,7 +66,7 @@ def calc_targOlapf(lamGrid, lam, extrct, flatOlap, label, idl=''):
 
         scale = dLamdx/dLamdx[int(nx/2.)]
 
-        #original
+        #original T.Brown Code
         #flux=interpol(extrct(*,gord(i))*scale,lam(*,gord(i)),lamgrid)
         interpfunc = interpolate.interp1d(lam[:,gOrd[i]],extrct[:,gOrd[i]]*scale, kind='linear', fill_value='extrapolate')
         flux=interpfunc(lamGrid)
@@ -81,7 +78,7 @@ def calc_targOlapf(lamGrid, lam, extrct, flatOlap, label, idl=''):
         #if(nsl gt 0) then flux(sl)=0.d0
         #if(nsh gt 0) then flux(sh)=0.d0
         
-        #ADAM CODE OF ABOVE - LIKLEY BUGGY
+        #ADAM CODE OF ABOVE - POTENTIALLY BUGGY
         mini = np.min(lam[:,gOrd[i]])
         maxi = np.max(lam[:,gOrd[i]])
 
@@ -107,11 +104,7 @@ def calc_targOlapf(lamGrid, lam, extrct, flatOlap, label, idl=''):
         targOlapf[i] = targOlap[i]/flatOlap[i]
 
 
-    #for i in range(len(gOrd)) :
-    #    pyL = extrct[:,gOrd[i]]
-    #    idlL = idl['extrct'][gOrd[i],:]
-    #    plt.figure()
-    #    plt.plot(range(len(pyL)),abs(pyL-idlL))
+
 
     #fig = plt.figure()
     #print(flatOlap)
@@ -126,13 +119,20 @@ def calc_targOlapf(lamGrid, lam, extrct, flatOlap, label, idl=''):
     
     
 
-    
-def calc_shk(lamGrid, targOlapf, rvcc, teff=6200., idl=''):
+#This is the actual function to calculate the SHK
+#Takes the standard lamda grid, and correlated/noise free target data(targOlapf)
+#also takes teff for use in the planck function and a radial velocity
+#which is not currently used. I have left it in case we decide later to use it
+#over cross-correlation
+def calc_shk(lamGrid, targOlapf, rvcc, teff=6200.):
     
     from helpers import hk_windows
-    from helpers import PlanckFunc as planck
-    from matplotlib import pyplot as plt
     import helpers as h#for constants
+    
+    from astropy.modeling.blackbody import blackbody_lambda
+    from astropy import units as u
+    from matplotlib import pyplot as plt
+    
     
     
     gain=3.4           # e-/ADU
@@ -140,22 +140,13 @@ def calc_shk(lamGrid, targOlapf, rvcc, teff=6200., idl=''):
     
     
     
-    
+    #this function gives us the regions of our arrays which hold the information we need to sum
     windows = hk_windows(rvcc, lamGrid,h.cahLam,h.cakLam,h.lamB,h.lamR)[0]
 
     fh=(targOlapf*windows[:,0]).sum()
     fk=(targOlapf*windows[:,1]).sum()
     fr=(targOlapf*windows[:,2]).sum()
     
-    #mini = next((i for i, x in enumerate(windows[:,0]) if x), None)
-    #maxi = [i for i, e in enumerate(windows[:,0]) if e != 0][-1]
-    #print('lamMin H: '+ str(lamGrid[mini]))
-    #print('lamMax H: '+ str(lamGrid[maxi]))
-    
-    #mini = next((i for i, x in enumerate(windows[:,1]) if x), None)
-    #maxi = [i for i, e in enumerate(windows[:,1]) if e != 0][-1]
-    #print('lamMin K: '+ str(lamGrid[mini]))
-    #print('lamMax K: '+ str(lamGrid[maxi]))
     
     #plt.figure()
     #cur=windows[:,0]
@@ -173,25 +164,21 @@ def calc_shk(lamGrid, targOlapf, rvcc, teff=6200., idl=''):
     #plt.show()
     #plt.close()
     
-    
-    from astropy.modeling.blackbody import blackbody_lambda
-    from astropy import units as u
-    
+    #the SHK calculation with pseudo V-Band
     plFactor = blackbody_lambda(h.lamB*u.nm,teff*u.K).value/blackbody_lambda(h.lamR*u.nm,teff*u.K).value
-    #print('plfactor: '+ str(plFactor))
-        #0.977753 #SO HACKED, TODO DOES THIS CHANGE??
+
     fb = fr*plFactor
 
     num = (fh+fk)*gain
     den = (fr+fb)*gain
     shk = kk*(fh+fk)/(fr+fb)
     #print("shk: "+ str(shk))
-    if idl!='' :
-        print("error vs idl; "+str(100*abs(shk-idl['shk'])/idl['shk']))
+
     return shk, windows, fr/fb
 
-#smarts specific
-def smart_calc_shk(lamGrid, targOlapf, rvcc, teff=6200., idl=''):
+#smarts specific calc_shk which just calls the special windows function
+#to find the v-band window and uses the real v-band data
+def smart_calc_shk(lamGrid, targOlapf, rvcc, teff=6200.):
     
     from helpers import smart_hk_windows
     from helpers import PlanckFunc as planck
@@ -202,25 +189,13 @@ def smart_calc_shk(lamGrid, targOlapf, rvcc, teff=6200., idl=''):
     gain=3.4           # e-/ADU
     kk=8.*2.40#31.             # factor to make shk into equivalent width (a guess!)
     
-    
-    
-    
+    #this function gives us the regions of our arrays which hold the information we need to sum
     windows = smart_hk_windows(rvcc, lamGrid,h.cahLam,h.cakLam,h.lamB,h.lamR)[0]
 
     fh=(targOlapf*windows[:,0]).sum()
     fk=(targOlapf*windows[:,1]).sum()
     fr=(targOlapf*windows[:,2]).sum()
     fb=(targOlapf*windows[:,3]).sum()
-    
-    #mini = next((i for i, x in enumerate(windows[:,0]) if x), None)
-    #maxi = [i for i, e in enumerate(windows[:,0]) if e != 0][-1]
-    #print('lamMin H: '+ str(lamGrid[mini]))
-    #print('lamMax H: '+ str(lamGrid[maxi]))
-    
-    #mini = next((i for i, x in enumerate(windows[:,1]) if x), None)
-    #maxi = [i for i, e in enumerate(windows[:,1]) if e != 0][-1]
-    #print('lamMin K: '+ str(lamGrid[mini]))
-    #print('lamMax K: '+ str(lamGrid[maxi]))
     
     #plt.figure()
     #cur=windows[:,0]
@@ -237,29 +212,10 @@ def smart_calc_shk(lamGrid, targOlapf, rvcc, teff=6200., idl=''):
     ##plt.plot(lamGrid[cur!=0],targOlapf[cur!=0])#*cur[cur!=0],'k-')
     #plt.show()
     #plt.close()
-    
-    #print('fh')
-    #print(abs(fh-idl['fh']))
-    #print('fk')
-    #print(abs(fk-idl['fk']))
-    #print('fr')
-    #print(abs(fr-idl['fr']))
-    #print('pl')
-    #print(abs(plFactor-idl['plfactor']))
-    #TODO FIND WORKING PYTHON PLANK FUNCTION
-    
-    from astropy.modeling.blackbody import blackbody_lambda
-    from astropy import units as u
-    
-    #plFactor = blackbody_lambda(h.lamB*u.nm,teff*u.K).value/blackbody_lambda(h.lamR*u.nm,teff*u.K).value
-    #print('plfactor: '+ str(plFactor))
-        #0.977753 #SO HACKED, TODO DOES THIS CHANGE??
-    #fb = fr*plFactor
 
     num = (fh+fk)*gain
     den = (fr+fb)*gain
     shk = kk*(fh+fk)/(fr+fb)
     #print("shk: "+ str(shk))
-    if idl!='' :
-        print("error vs idl; "+str(100*abs(shk-idl['shk'])/idl['shk']))
+
     return shk, windows, fr/fb
