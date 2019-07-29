@@ -11,6 +11,7 @@ nreshk > python files.py
             > 22049\ #Star folders must start with a number
             > 17051\ #another example of star folder
             > flats\ #must contain only flat files, the pipeline *should* be able to read flat files in any sub directory
+            > LabSpectra\ #the reference spectra folder which will be loaded in for cross correlation
        >output\ #created by the pipeline to show time series information on each star and nightly observation's debug info
       
 All spectra and flat files should be in .fits format
