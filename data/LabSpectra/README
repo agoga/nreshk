@@ -1,0 +1,55 @@
+
+Notice - This anonymous ftp service is under development and is subject
+to change without notice.
+
+Welcome,
+
+This subdirectory contains a solar spectral atlas obtained with
+the Fourier Transform Spectrometer at the McMath/Pierce Solar Telescope
+situated on Kitt Peak, Arizona, and operated by the National Solar
+Observatory, a Division of the National Optical Astronomy Observatories.
+NOAO is adminsitered by the Association of Univiersities for Research in
+Astronomy, Inc., under cooperative agreement with the National Science
+Foundation.
+
+This version of ``Solar Flux Atlas from 296 to 1300 nm'' by Robert L.
+Kurucz, Ingemar Furenlid, James Brault, and Larry Testerman, (National Solar 
+Observatory Atlas No. 1, June 1984), is meant to be used in conjunction with 
+the original hard-copy version, and the caveats in the text of that version 
+apply here equally.
+
+The spectrum on pages 47 to 238 of the original is contained in ascii files
+covering 4 nm plus 0.1 nm of overlap on the high wavelength end.  
+Each file is given the name ``lmxxxx'' where xxxx is the wavelength of the 
+beginning of the main 4 nm of the segment.  Thus, lm0872 contains the material
+from 872.0 to 876.1 nm. The first column contains the wavelength in air, 
+the second column contains the pseudo-residual flux, and the third column 
+contains the corresponding observed irradiance in units of micro-watts per 
+square centimeter per nanometer. Refer to the hard-copy for details of the 
+irradiance calibration. One micro-watt is 10 ergs/sec. For flux in ergs per 
+square sm per second per nanometer at the solar surface, multiply the 
+irradiance by 10*(1.495985e13/6.9598e10)**2=462020. For astrophysical flux F 
+divide the surface flux by pi (3.14159). For flux moment H divide the surface 
+flux by 4 pi.
+
+The digital source of the spectrum was a 9-track 1600 BPI tape
+containing the spectrum on two different wavelength grids. The data provided
+at this ftp site is on the original unevenly-spaced grid. 
+
+
+***** RESTRICTION ON USE OF THESE DATA *****
+
+These data are freely available with one restriction: If you use the data
+or some product based on the data in a published paper, we ask that you
+include an acknowledgement as follows:
+
+	NSO/Kitt Peak FTS data used here were produced by NSF/NOAO.
+
+*********************************************
+
+For further information contact:
+fhill@noao.edu (internet)
+
+5/15/95 - F. Hill
+6/11/02 - Revised by F. Hill
+
