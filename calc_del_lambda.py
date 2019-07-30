@@ -134,14 +134,15 @@ def calc_del_lam(labGrid, lab, tarGrid, targ, smooth) :
     
     
     #width is used for local maximum finding
-    #1 is a number that worked here for smarts and NRES data. MAY NEED TO BE ADJUSTED
+    #1 is a number that worked here for smarts and NRES data. MAY NEED TO BE ADJUSTED for new data
     width = int(1/dLam)
 
     #max value is the index of the maximum value(local max around middle of array if width used)
     mval = middle-width+np.argmax(correlation[middle-width:middle+width])
     
     
-    #want to make a quadratic to be more precise with 'peak' of correlation
+    #want to make a quadratic around mval to be more precise with 'peak' of correlation
+    #if we just use max val, precision is limited to grid spacing.
     #need to do poly only in certain range around center because wings will take over the fit
     fitWidth = 5
 
@@ -171,8 +172,8 @@ def calc_del_lam(labGrid, lab, tarGrid, targ, smooth) :
 
     
     
-    #used for printing
-    scale = np.mean(gausdTarg)/np.mean(labInterp)
+    #used for printing/debuging
+    #scale = np.mean(gausdTarg)/np.mean(labInterp)
 
     #tmpMax = np.argmax(out)
     #print('index of maximum: ' + str(tmpMax) + ' and adjusted delLam: ' + str(tmpMax/len(out)))
