@@ -1,3 +1,5 @@
+www.google.com
+
 This pipeline takes raw data from LCO NRES archives and creates a timeseries of the S-Index for each star it is run on. The S-index is a proxy for magnetic activity in stars. Please see the Mount Wilson Observatory HK project for more information.
 
 Authors: Adam Goga - adfgoga@gmail.com
