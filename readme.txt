@@ -3,7 +3,6 @@ Physics today overview - https://physicstoday.scitation.org/doi/10.1063/PT.3.395
 Metcalfe et. al (2016) - https://ui.adsabs.harvard.edu/abs/2016ApJ...826L...2M/abstract
 Metcalfe & van Saders - https://ui.adsabs.harvard.edu/abs/2017SoPh..292..126M/abstract
 
-
 https://www.linkedin.com/in/adamgoga/
 Please find my CV here - https://drive.google.com/open?id=10XdA9mXcWKiZOVKEZ2MzCMQvpvZlMQXK
 
