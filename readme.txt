@@ -14,6 +14,8 @@ Authors: Adam Goga - adfgoga@gmail.com
          Travis Metcalfe - travis@spsci.org
          Tim Brown (original pipeline based on Tim Brown's IDL pipeline)
 
+Working.ipynb is the main Jupyter notebook which contains the wrapper for the pipeline.
+
 The following is the required folder structure to get the pipeline to run on your data:
 nreshk > python files.py
        > data\
