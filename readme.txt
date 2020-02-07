@@ -1,11 +1,3 @@
-SHINE Conference additional information and references:
-Physics today overview - https://physicstoday.scitation.org/doi/10.1063/PT.3.3956
-Metcalfe et. al (2016) - https://ui.adsabs.harvard.edu/abs/2016ApJ...826L...2M/abstract
-Metcalfe & van Saders - https://ui.adsabs.harvard.edu/abs/2017SoPh..292..126M/abstract
-
-www.linkedin.com/in/adamgoga/
-My CV - http://bit.ly/agoga_cv
-
 ----------------------------------------------------------------------
 This pipeline takes raw data from LCO NRES archives and creates a timeseries of the S-Index for each star it is run on. The S-index is a proxy for magnetic activity in stars. Please see the Mount Wilson Observatory HK project for more information.
 
@@ -26,3 +18,10 @@ nreshk > python files.py
        >output\ #created by the pipeline to show time series information on each star and nightly observation's debug info
       
 All spectra and flat files should be in .fits format
+
+
+
+Additional information and references:
+Physics today overview - https://physicstoday.scitation.org/doi/10.1063/PT.3.3956
+Metcalfe et. al (2016) - https://ui.adsabs.harvard.edu/abs/2016ApJ...826L...2M/abstract
+Metcalfe & van Saders - https://ui.adsabs.harvard.edu/abs/2017SoPh..292..126M/abstract
