@@ -6,6 +6,8 @@ Authors: Adam Goga - adfgoga@gmail.com
          Travis Metcalfe - travis@spsci.org
          Tim Brown (original pipeline based on Tim Brown's IDL pipeline)
 
+
+Notes:
 Working.ipynb is the main Jupyter notebook which contains the wrapper for the pipeline.
 
 The following is the required folder structure to get the pipeline to run on your data:
@@ -17,7 +19,11 @@ nreshk > python files.py
             > LabSpectra\ #the reference spectra folder which will be loaded in for cross correlation
        >output\ #created by the pipeline to show time series information on each star and nightly observation's debug info
       
-All spectra and flat files should be in .fits format
+Star directories should contain sub-directories for each observation, maintaining the directory name contained within the .tar.gz files obtained from the LCO archive.
+
+All spectra and flat files should be in .fits format; not the compressed .fits.fz format that comes from the LCO archive.  Use `funpack` to decompress the files.
+
+At this time, stellar effective temperatures are hard-coded into a dictionary named `tEffLookup` in the helpers.py module.  If you are running the pipeline on a star not listed in that dictionary, it must be added first.  (A better configuration method will be implemented in a future version.)
 
 
 
