@@ -19,7 +19,7 @@ nreshk > python files.py
             > LabSpectra\ #the reference spectra folder which will be loaded in for cross correlation
        >output\ #created by the pipeline to show time series information on each star and nightly observation's debug info
       
-Star directories should contain sub-directories for each observation, maintaining the directory name contained within the .tar.gz files obtained from the LCO archive.
+Star directories should contain sub-directories for each observation, maintaining the directory name contained within the .tar.gz files obtained from the LCO archive. Currently the pipeline needs the reduced 'e91' observations from LCO database not the 'e00' files.
 
 All spectra and flat files should be in .fits format; not the compressed .fits.fz format that comes from the LCO archive.  Use `funpack` to decompress the files.
 
