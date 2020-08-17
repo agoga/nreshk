@@ -4,8 +4,8 @@ output/
 
 
 #nreshk data files and outputs
-*_report.pdf
-.npz
+*.pdf
+*.npz
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
