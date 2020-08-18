@@ -15,22 +15,24 @@ def mk_flatolap(lam, flat, idl=''):
     import numpy as np
     import scipy.io as sc
     import sys
+    import helpers as h
     from matplotlib.backends.backend_pdf import PdfPages
-
+    
     from matplotlib import pyplot as plt
 
     from astropy.convolution import convolve, Box1DKernel
-
 
 
     ##intializations and hardcoded inputs TODO fix hardcoded?
     ##mk_flatolap
     lamRan=[380.,420.]
     dLam =0.001
-    gOrd=[63,64,65,66]
+    gOrd=h.gOrd
     nGord= len(gOrd)
     nx=4096
-    bounds=[[615,3803],[670,3770],[733,3740],[750,3660]]
+    #bounds sets everything below and above the index to 0 in each order of the flat
+    #i think they are arbitrary
+    bounds=[[615,3803],[670,3770],[733,3740],[750,3660],[770,3650]]
 
     bad = False
     #read filesfits
@@ -73,6 +75,7 @@ def mk_flatolap(lam, flat, idl=''):
     #print(np.shape(gFlat))
     #print(np.shape(sgFlat))
 
+    print(gFlat.shape)
     stuff = []
     for i in range(len(gOrd)) :
         #bug cant do bounds[i,0] for some reason

@@ -130,6 +130,7 @@ def sum_daily_data(setName,data,labSpec):
     from scipy import interpolate
     import numpy as np
     from calc_shk import calc_shk
+    from calc_shk import smart_calc_shk
     from helpers import mkdir_p
     from astropy.time import Time
     from helpers import pdf_from_data
@@ -224,7 +225,7 @@ def sum_daily_data(setName,data,labSpec):
         tempEff = h.tEffLookup[setName.strip('/')]
 
         #find SHK with new offset to lamda grid
-        shkRet = calc_shk(curLamGrid, combinedTarg, rv, teff=tempEff)
+        shkRet = smart_calc_shk(curLamGrid, combinedTarg, rv, teff=tempEff)
 
         shk = shkRet[0]
         windows = shkRet[1]
