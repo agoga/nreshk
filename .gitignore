@@ -1,7 +1,9 @@
 #nreshk folders
 data/
 output/
-
+data-kepler/
+preblue_data/
+*.fits
 
 #nreshk data files and outputs
 *.pdf
