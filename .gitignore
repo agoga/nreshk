@@ -3,6 +3,7 @@ data/
 output/
 data-kepler/
 preblue_data/
+68ord_data
 *.fits
 
 #nreshk data files and outputs

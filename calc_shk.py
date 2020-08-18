@@ -26,14 +26,13 @@ def calc_targOlapf(lamGrid, lam, extrct, flatOlap, label):
     import sys
     import astropy.io.fits
     import os
-    import helpers as h
     from matplotlib import pyplot as plt
     from helpers import mkdir_p 
     from astropy.convolution import convolve, Box1DKernel
     from matplotlib.backends.backend_pdf import PdfPages
     
-    #good orders?
-    gOrd=h.gOrd
+
+    gOrd=[63,64,65,66]
     ngord=len(gOrd)
 
     nx=4096#TODO BAD ADAM
@@ -82,9 +81,7 @@ def calc_targOlapf(lamGrid, lam, extrct, flatOlap, label):
         #ADAM CODE OF ABOVE - POTENTIALLY BUGGY
         mini = np.min(lam[:,gOrd[i]])
         maxi = np.max(lam[:,gOrd[i]])
-        print('minmax')
-        print(mini)
-        print(maxi)
+
         sl=(lamGrid<=mini).nonzero()
         sh=(lamGrid>=maxi).nonzero()
 
@@ -109,21 +106,12 @@ def calc_targOlapf(lamGrid, lam, extrct, flatOlap, label):
 
 
 
-    fig = plt.figure()
-    #print(flatOlap)
-
-    plt.plot(lamGrid, targOlapf, 'k-')
-    plt.xlabel('wavelength [nm]')
-    plt.ylabel('tragOlapf')
-    plt.show()
-    plt.close()
-    
     #fig = plt.figure()
     #print(flatOlap)
 
-    #plt.plot(lamGrid, flatOlap, 'k-')
+    #plt.plot(lamGrid, targOlapf, 'k-')
     #plt.xlabel('wavelength [nm]')
-    #plt.ylabel('flat')
+    #plt.ylabel('tragOlapf')
     #plt.show()
     #plt.close()
     
@@ -186,19 +174,16 @@ def calc_shk(lamGrid, targOlapf, rvcc, teff=6200.):
     shk = kk*(fh+fk)/(fr+fb)
     #print("shk: "+ str(shk))
 
-    return shk, windows, fb/fr
+    return shk, windows, fr/fb
 
 #smarts specific calc_shk which just calls the special windows function
 #to find the v-band window and uses the real v-band data
 def smart_calc_shk(lamGrid, targOlapf, rvcc, teff=6200.):
     
     from helpers import smart_hk_windows
-    import helpers as h#for constants
-    import numpy as np
-    
-    #from astropy.modeling.blackbody import blackbody_lambda
-    from astropy import units as u
+    from helpers import PlanckFunc as planck
     from matplotlib import pyplot as plt
+    import helpers as h#for constants
     
     
     gain=3.4           # e-/ADU
@@ -207,17 +192,11 @@ def smart_calc_shk(lamGrid, targOlapf, rvcc, teff=6200.):
     #this function gives us the regions of our arrays which hold the information we need to sum
     windows = smart_hk_windows(rvcc, lamGrid,h.cahLam,h.cakLam,h.lamB,h.lamR)[0]
 
-    print('window shape')
-    print(windows.shape)
-    print('len ' + str(len(lamGrid)))
-    print('len2 ' + str(len(targOlapf)))
     fh=(targOlapf*windows[:,0]).sum()
     fk=(targOlapf*windows[:,1]).sum()
     fr=(targOlapf*windows[:,2]).sum()
     fb=(targOlapf*windows[:,3]).sum()
-
-    print('fr ' +str(fr))
-    print('fb ' + str(fb))
+    
     #plt.figure()
     #cur=windows[:,0]
     #plt.plot(lamGrid[cur!=0],targOlapf[cur!=0])#*cur[cur!=0],'k-')
@@ -229,9 +208,9 @@ def smart_calc_shk(lamGrid, targOlapf, rvcc, teff=6200.):
     #plt.show()
     #plt.close()
     #plt.figure()
-    #cur=windows[:,3]
-   # plt.plot(lamGrid[cur!=0],targOlapf[cur!=0])#*cur[cur!=0],'k-')
-   # plt.show()
+    #cur=windows[:,2]
+    ##plt.plot(lamGrid[cur!=0],targOlapf[cur!=0])#*cur[cur!=0],'k-')
+    #plt.show()
     #plt.close()
 
     num = (fh+fk)*gain
@@ -239,4 +218,4 @@ def smart_calc_shk(lamGrid, targOlapf, rvcc, teff=6200.):
     shk = kk*(fh+fk)/(fr+fb)
     #print("shk: "+ str(shk))
 
-    return shk, windows, fb/fr
+    return shk, windows, fr/fb

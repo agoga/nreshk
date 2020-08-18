@@ -3,7 +3,6 @@ c=2.99792458e5  #speed of light (km/s)
 cahLam=396.847# 396.967 #   #Ca II H line wavelength (nm, vacuum)
 cakLam=393.366#393.485 #    #Ca II K line wavelength (nm, vacuum)
 
-gOrd = [63,64,65,66,67]#number of good orders...i think
 
 #center of blue continuum band (nm, vacuum)
 lamB=390.2176-.116#subtraction is the offset from our lab values     
@@ -142,16 +141,12 @@ def pdf_from_data(bGrid, base, oGrid, obs, windows, title, path, descript, flat=
     import scipy as sc
     import helpers as h#for constants
     
-    print(bGrid[0])
-    print('pdf window shape')
-    print(windows.shape)
     
     calH = h.cahLam#396.847#TODO and make global
     calK = h.cakLam#393.366
     #center of red continuum band (nm, vacuum)
     
     lamR=h.lamR
-    lamB=h.lamB
     
     #if flat was passed as empty, fill it with nans
     if len(flat) == 0:
@@ -182,7 +177,7 @@ def pdf_from_data(bGrid, base, oGrid, obs, windows, title, path, descript, flat=
     plt.suptitle(title)
     plt.ticklabel_format(useOffset=False)
     with PdfPages(path+descript+"_report.pdf") as curPdf:
-        gs = gridspec.GridSpec(4, 4)
+        gs = gridspec.GridSpec(4, 3)
         
         #references to each plot
         targPlt = plt.subplot(gs[2,:])
@@ -191,13 +186,11 @@ def pdf_from_data(bGrid, base, oGrid, obs, windows, title, path, descript, flat=
         kPlt = plt.subplot(gs[0,0])
         hPlt = plt.subplot(gs[0,1])
         rPlt =plt.subplot(gs[0,2])
-        bPlt =plt.subplot(gs[0,3])
         
         #please matplotlib don't make my stuff hard to read!
         hPlt.ticklabel_format(useOffset=False)
         kPlt.ticklabel_format(useOffset=False)
         rPlt.ticklabel_format(useOffset=False)
-        bPlt.ticklabel_format(useOffset=False)
         targPlt.ticklabel_format(useOffset=False)
         flatPlt.ticklabel_format(useOffset=False)
         smoothedPlt.ticklabel_format(useOffset=False)
@@ -205,7 +198,6 @@ def pdf_from_data(bGrid, base, oGrid, obs, windows, title, path, descript, flat=
         hPlt.tick_params(axis='both',which= 'major', labelsize=7)
         kPlt.tick_params(axis='both',which= 'major', labelsize=7)
         rPlt.tick_params(axis='both',which= 'major', labelsize=7)
-        bPlt.tick_params(axis='both',which= 'major', labelsize=7)
         targPlt.tick_params(axis='both',which= 'major', labelsize=7)
         flatPlt.tick_params(axis='both',which= 'major', labelsize=7)
         smoothedPlt.tick_params(axis='both',which= 'major', labelsize=7)
@@ -217,7 +209,6 @@ def pdf_from_data(bGrid, base, oGrid, obs, windows, title, path, descript, flat=
         hPlt.set_title("Ca-H window")
         kPlt.set_title("Ca-K window")
         rPlt.set_title("Red band window")
-        bPlt.set_title("Blue band window")
         
         targPlt.set_title("Target overlap shifted over reference spectra")
         targPlt.set_xlabel("Wavelength(nm)")
@@ -236,7 +227,6 @@ def pdf_from_data(bGrid, base, oGrid, obs, windows, title, path, descript, flat=
         cur=windows[:,0]
         hkWidth=h.lineWid + .005
         rWidth =h.conWid/2 +.05
-        bWidth =h.conWid/2 +.05
         
         hPlt.axvline(x=calH,color=hColor)
         hPlt.plot(oGrid[cur!=0],obs[cur!=0],'b-')
@@ -251,21 +241,11 @@ def pdf_from_data(bGrid, base, oGrid, obs, windows, title, path, descript, flat=
         rPlt.plot(oGrid[cur!=0],obs[cur!=0])
         rPlt.set_xlim(lamR-rWidth, lamR+rWidth)
         
-         
+        
+        #Targolapf plot 
         #get red lines from windows funct too
         rMin = oGrid[cur!=0][0]
         rMax = oGrid[cur!=0][-1]
-        
-        
-        cur=windows[:,3]
-        bPlt.plot(oGrid[cur!=0],obs[cur!=0])
-        bPlt.set_xlim(lamB-bWidth, lamB+bWidth)
-        
-        bMin = oGrid[cur!=0][0]
-        bMax = oGrid[cur!=0][-1]
-        
-        
-        #Targolapf plot 
        #print('rmin: ' + str(rMin) + ' rMax: ' + str(rMax))
         #terrrrible way to get scale fixxxxxxx
         scale = obs[cur!=0]/base[cur!=0]
@@ -275,8 +255,6 @@ def pdf_from_data(bGrid, base, oGrid, obs, windows, title, path, descript, flat=
         targPlt.axvline(x=calK,color=kColor)
         targPlt.axvline(x=rMin, color='red')
         targPlt.axvline(x=rMax, color='red')
-        targPlt.axvline(x=bMin, color='purple')
-        targPlt.axvline(x=bMax, color='purple')
         
         #if there is a flat to plot then only use the target data when it is greater than .4
         #If we dont do this then on the edges out graph will be divided by a very small number which
@@ -305,9 +283,6 @@ def pdf_from_data(bGrid, base, oGrid, obs, windows, title, path, descript, flat=
         smoothedPlt.axvline(x=calK,color=kColor)
         smoothedPlt.axvline(x=rMin, color='red')
         smoothedPlt.axvline(x=rMax, color='red')
-        
-        smoothedPlt.axvline(x=bMin, color='purple')
-        smoothedPlt.axvline(x=bMax, color='purple')
         
         
         #if there is a flat to plot then only use the target data when it is greater than .4
