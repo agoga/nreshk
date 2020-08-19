@@ -421,3 +421,34 @@ def bad_spec_detection(lamGrid, targ):
         #plt.show()
         #plt.close()
     return bad
+
+    #todo clean and place into healpers file
+def print_header(header):
+    for h in header.keys():
+        print(h, header[h])
+def mjd_from_hdu(hdu):
+    return hdu[0].header['MJD-OBS']
+
+#https://stackoverflow.com/questions/47725773/finding-an-integer-key-of-a-python-dict-that-is-closest-to-a-given-integer
+def find_nearest_mjd(dd,mjd):
+    low = max([d for d in dd if d<= mjd])
+    high = min([d for d in dd if d>= mjd])
+    nearkey = low if mjd - low <= high - mjd else high
+    return nearkey
+
+def closestKey(dic, key):
+    diff = {k:abs(k - key) for k in dic}
+    return min(diff, key=diff.get)
+
+def is_folder_star(folder):
+    try:
+        #if first letter is number we can run pipeline on it
+        int(folder[0])
+        return True
+    except ValueError:
+        return False
+    
+def get_immediate_subdirectories(a_dir):
+    import os
+    return [name for name in os.listdir(a_dir)
+            if os.path.isdir(os.path.join(a_dir, name))]

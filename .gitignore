@@ -1,14 +1,25 @@
 #nreshk folders
-data/
-output/
-data-kepler/
-preblue_data/
-68ord_data
-*.fits
+
+
+
+#uncomment below to keep 22049 directory
+#!data/
+data/*
+#!data/22049/
+
+/output/
+/data-kepler/
+/preblue_data/
+/68ord_data
+
+
+
 
 #nreshk data files and outputs
 *.pdf
 *.npz
+*.fits
+*.zip
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

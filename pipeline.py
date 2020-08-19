@@ -42,12 +42,14 @@ def create_flat_dict_file(flatDir,fileName):
 def load_folder_for_pipeline(path,dirs,curFiles):
     import os
     import astropy.io.fits
+    import logging
     
     waveGrid = []
     spec = []
     header = []
     fileName = ''#spec file name
-    
+
+    logging.debug('1')
     oldFormat = False
     #see if the folder contains a -noflat or -wave file
     #There may be a faster way to determine if this folder is old or new but I don't see a safer way
