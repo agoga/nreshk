@@ -117,16 +117,44 @@ def calc_targOlapf(lamGrid, lam, extrct, flatOlap, label):
     
     return targOlapf
     
+
+#todo move this function to calcshk or copy comments
+# rvcc = redshift of target star relative to lab. (km/s)
+def hk_windows(rvcc,lamGrid,cahLam,cakLam,lamB,lamR):
+    import numpy as np
+    import helpers as h
+    #brown
+    #make output array
+    nLam = len(lamGrid)
+    windows = np.zeros((nLam,3),dtype=np.float32)
+    z = 1. +rvcc/h.c
     
+    #brown
+    #make window functions
+    d0 = abs(lamGrid-h.cahLam*z)/h.lineWid
+    s = (d0<=1.0).nonzero()
+    if len(s) > 0:
+        windows[s,0]=1.-d0[s] 
+    
+    d1 = abs(lamGrid-h.cakLam*z)/h.lineWid
+    s = (d1<=1.0).nonzero()
+    if len(s) > 0:
+        windows[s,1]=1.-d1[s] 
+    
+    d2 = abs(lamGrid-h.lamR*z)*2./h.conWid
+    s = (d2<=1.0).nonzero()
+    if len(s) > 0:
+        windows[s,2]=1.
+
+    return windows, lamB, lamR
 
 #This is the actual function to calculate the SHK
 #Takes the standard lamda grid, and correlated/noise free target data(targOlapf)
 #also takes teff for use in the planck function and a radial velocity
 #which is not currently used. I have left it in case we decide later to use it
 #over cross-correlation
+#rvcc is optional parameter if we want radial velocity shift
 def calc_shk(lamGrid, targOlapf, rvcc, teff=6200.):
-    
-    from helpers import hk_windows
     import helpers as h#for constants
     
     from astropy.modeling.blackbody import blackbody_lambda
@@ -176,11 +204,52 @@ def calc_shk(lamGrid, targOlapf, rvcc, teff=6200.):
 
     return shk, windows, fr/fb
 
+
+#smarts specific hk windows with V-Band included
+def smart_hk_windows(rvcc,lamGrid,cahLam,cakLam,lamB,lamR):
+    import numpy as np
+    import helpers as h
+    
+
+    #make output array
+    nLam = len(lamGrid)
+    windows = np.zeros((nLam,4),dtype=np.float32)
+    z = 1. +rvcc/h.c
+    
+    
+    #emmission features
+    #creates a triangle filter around CA H and K
+    # H 
+    d0 = abs(lamGrid-h.cahLam*z)/h.lineWid
+    s = (d0<=1.0).nonzero()
+    if len(s) > 0:
+        #print('g')
+        #print(1.-d0[s])
+        windows[s,0]=1.-d0[s] 
+    # K
+    d1 = abs(lamGrid-h.cakLam*z)/h.lineWid
+    s = (d1<=1.0).nonzero()
+    if len(s) > 0:
+        windows[s,1]=1.-d1[s] 
+    
+    #continum bands
+    #no filter applied to continum bands
+    d2 = abs(lamGrid-h.lamR*z)*2./h.conWid
+    s = (d2<=1.0).nonzero()
+    #r-band
+    if len(s) > 0:
+        windows[s,2]=1.
+    #v-band
+    d3 = abs(lamGrid-h.lamB*z)*2./h.conWid
+    s = (d3<=1.0).nonzero()
+    if len(s) > 0:
+        windows[s,3]=1.
+        
+    return windows, lamB, lamR
+
 #smarts specific calc_shk which just calls the special windows function
 #to find the v-band window and uses the real v-band data
 def smart_calc_shk(lamGrid, targOlapf, rvcc, teff=6200.):
-    
-    from helpers import smart_hk_windows
     from helpers import PlanckFunc as planck
     from matplotlib import pyplot as plt
     import helpers as h#for constants

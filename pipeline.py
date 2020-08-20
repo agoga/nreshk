@@ -309,7 +309,6 @@ def plot_daily_data_timeseries(inData,setName,bad):
         #h[0] is header
         #h[1] is bool saying wheather it's a average observation or single
         h=headerArray[i]
-        print(type(h))
         b=boolArray[i]
         s = h['SITEID']
         tStr =''

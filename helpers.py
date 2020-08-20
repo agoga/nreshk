@@ -72,68 +72,6 @@ class data:
         self.shk = 0 if shk is None else shk
         self.single = True if single is None else single
 
-        
-def hk_windows(rvcc,lamGrid,cahLam,cakLam,lamB,lamR):
-    import numpy as np
-    
-    #brown
-    #make output array
-    nLam = len(lamGrid)
-    windows = np.zeros((nLam,3),dtype=np.float32)
-    z = 1. +rvcc/c
-    
-    #brown
-    #make window functions
-    d0 = abs(lamGrid-cahLam*z)/lineWid
-    s = (d0<=1.0).nonzero()
-    if len(s) > 0:
-        windows[s,0]=1.-d0[s] 
-    
-    d1 = abs(lamGrid-cakLam*z)/lineWid
-    s = (d1<=1.0).nonzero()
-    if len(s) > 0:
-        windows[s,1]=1.-d1[s] 
-    
-    d2 = abs(lamGrid-lamR*z)*2./conWid
-    s = (d2<=1.0).nonzero()
-    if len(s) > 0:
-        windows[s,2]=1.
-    return windows, lamB, lamR
-
-#smarts specific hk windows with V-Band included
-def smart_hk_windows(rvcc,lamGrid,cahLam,cakLam,lamB,lamR):
-    import numpy as np
-    
-    #brown
-    #make output array
-    nLam = len(lamGrid)
-    windows = np.zeros((nLam,4),dtype=np.float32)
-    z = 1. +rvcc/c
-    
-    #brown
-    #make window functions
-    d0 = abs(lamGrid-cahLam*z)/lineWid
-    s = (d0<=1.0).nonzero()
-    if len(s) > 0:
-        #print('g')
-        #print(1.-d0[s])
-        windows[s,0]=1.-d0[s] 
-    
-    d1 = abs(lamGrid-cakLam*z)/lineWid
-    s = (d1<=1.0).nonzero()
-    if len(s) > 0:
-        windows[s,1]=1.-d1[s] 
-    
-    d2 = abs(lamGrid-lamR*z)*2./conWid
-    s = (d2<=1.0).nonzero()
-    if len(s) > 0:
-        windows[s,2]=1.
-    #v-band inclusion
-    d3 = abs(lamGrid-lamB*z)*2./conWid
-    s = (d3<=1.0).nonzero()
-    if len(s) > 0:
-        windows[s,3]=1.
-    return windows, lamB, lamR
 
 #https://stackoverflow.com/questions/11373610/save-matplotlib-file-to-a-directory
 def mkdir_p(mypath):
