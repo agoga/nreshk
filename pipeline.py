@@ -72,6 +72,7 @@ def load_folder_for_pipeline(path,dirs,curFiles):
         spec = specHDu[0].data[0]
         header = specHDu[0].header
         
+        
         #need the length here because sometimes the wave grid is in the first element
         #of this array but most of the time it's not 
         if len(wvHDu)>1 and type(wvHDu[1]) == astropy.io.fits.hdu.table.BinTableHDU:
@@ -128,7 +129,7 @@ def load_folder_for_pipeline(path,dirs,curFiles):
 #data[3].append(tuple((lamGrid,correlation[0],targOlapf)))
 #E
 #correlation[0] is the delta lamda to place spectra in lab frame and lamGrid is the lab frame
-def sum_daily_data(setName,data,labSpec):
+def sum_daily_data(setName,inData,labSpec):
     from scipy import interpolate
     import numpy as np
     from calc_shk import calc_shk
@@ -139,24 +140,37 @@ def sum_daily_data(setName,data,labSpec):
     
     rv = 0
     done = []#array to hold which MJD are done
-
+    print('failfish')
     #make a clean copy
-    dailyData = np.asarray(data)
+    dailyData = np.asarray(inData)
     
     #IF YOU DONT INCLUDE [:] THEN THIS IS A REFERENCE AND LIFE WILL STINK WHEN SORTING
-    sortedList = data[0][:]
-    datesList = dailyData[0]
+    #sortedList = data[0][:]
+    #datesList = dailyData[0]
+    datesList = []
+    sortedList = []
+    for i in range(len(dailyData)):
+        datesList.append(dailyData[i].mjd)
+        sortedList.append(dailyData[i].mjd)
+
+
+
     for i in range(len(datesList)):
-        curD = dailyData[:,i]
-        header = curD[2][0]
+        #curD = dailyData[:,i]
+        #header = curD[2][0]
+        curD = dailyData[i]
+        header = curD.header
+        
+        #site = header['SITEID']
         site = header['SITEID']
 
         #dont double up if we've alrady DONE this day
-        curMjd = curD[0]
+        #curMjd = curD[0]
+        curMjd = curD.mjd
         if(curMjd in done):
             continue
 
-
+        
         #find the closest MJD's to the current
         sortedList.sort(key=lambda x: abs(x - curMjd))
 
@@ -166,11 +180,16 @@ def sum_daily_data(setName,data,labSpec):
             #continue
             
         #grab the current day's values
-        curTuple = curD[3]
+        #curTuple = curD[3]
 
-        curLamGrid=curTuple[0]
-        curTargOlapf=curTuple[2]
-        curDLam=curTuple[1]
+        #curLamGrid=curTuple[0]
+        #curTargOlapf=curTuple[2]
+        #curDLam=curTuple[1]
+
+        curLamGrid=curD.lamGrid
+        curTargOlapf=curD.targOlapf
+        curDLam=curD.offset
+
         
         
         #need to interpolate because all the observations have slightly different lamda grids
@@ -200,12 +219,14 @@ def sum_daily_data(setName,data,labSpec):
             #grab the same day's data(will happen for multiple obs
             sameI = np.argmin(abs(datesList-same))
 
-            sameTuple = dailyData[:,sameI][3]
+            #sameTuple = dailyData[:,sameI][3]
 
-            sameLamGrid=sameTuple[0]
-            sameTargOlapf=sameTuple[2]
-            sameDLam=sameTuple[1]
-
+            #sameLamGrid=sameTuple[0]
+            #sameTargOlapf=sameTuple[2]
+            #sameDLam=sameTuple[1]
+            sameLamGrid=dailyData[sameI].lamGrid
+            sameTargOlapf=dailyData[sameI].targOlapf
+            sameDLam=dailyData[sameI].offset
 
             
 
@@ -242,12 +263,12 @@ def sum_daily_data(setName,data,labSpec):
 
         #print("c " + str(type(curMjd))+ "s " +str(type(shk)))
         #print("adding " + str(curMjd) + " with shk " + str(shk))
-        data[0].append(curMjd)
-        data[1].append(shk)
-        data[2].append(tuple((header,True)))
-        data[3].append(tuple((curLamGrid,0,combinedTarg)))
-
-    return data
+        #data[0].append(curMjd)
+        #data[1].append(shk)
+        #data[2].append(tuple((header,True)))
+        #data[3].append(tuple((curLamGrid,0,combinedTarg)))
+        inData.append(h.data(curMjd,header,curLamGrid,combinedTarg,0,shk,True))
+    return inData
 
 
 #this function plots the final time series of SHK values for each star
@@ -261,26 +282,36 @@ def sum_daily_data(setName,data,labSpec):
 #data[2].append(tuple((header,False)))
 #fourth array is data for the nightly observation function: grid, grid offset, and spectra
 #data[3].append(tuple((lamGrid,correlation[0],targOlapf)))
-def plot_daily_data_timeseries(data,setName,bad):
+def plot_daily_data_timeseries(inData,setName,bad):
     import numpy as np
     import matplotlib.patches as mpatches
     from matplotlib import pyplot as plt
     from astropy.time import Time
+    import astropy.io.fits 
+
+
+    mjdArray=[o.mjd for o in inData]
+    shkValArray=[o.shk for o in inData]
+
+    headerArray = [o.header for o in inData]
+
+    #headerArray=np.asarray(tH)
+    boolArray=np.asarray([o.single for o in inData])
+    #mjdArray = np.asarray(inData[0])
+    #shkValArray = np.asarray(inData[1])
+    #headerArray = np.asarray(inData[2])
     
-    
-    mjdArray = np.asarray(data[0])
-    shkValArray = np.asarray(data[1])
-    headerArray = np.asarray(data[2])
-
-
-
     fig, ax = plt.subplots(figsize=(12,6))
+    
 
     pltStr = []
-    for h in headerArray:
+    for i in range(len(inData)):
         #h[0] is header
         #h[1] is bool saying wheather it's a average observation or single
-        s = h[0]['SITEID']
+        h=headerArray[i]
+        print(type(h))
+        b=boolArray[i]
+        s = h['SITEID']
         tStr =''
 
         if s == 'lsc':
@@ -292,7 +323,7 @@ def plot_daily_data_timeseries(data,setName,bad):
         elif s=='tlv':
             tStr +='k'
 
-        if h[1] == True:
+        if b == True:
             tStr += 'o'
         else:
             tStr += '^'   

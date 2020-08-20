@@ -1,3 +1,4 @@
+import astropy.io.fits
 c=2.99792458e5  #speed of light (km/s)
 
 cahLam=396.847# 396.967 #   #Ca II H line wavelength (nm, vacuum)
@@ -52,6 +53,26 @@ tEffLookup = {"1835":5837,
             }
 
 
+
+class data:
+    mjd:float#
+    header:astropy.io.fits.header.Header#
+    lamGrid:list#
+    targOlapf:list#
+    offset:float#
+    shk:float#
+    single:bool#
+
+    def __init__(self, mjd=None,header=None,lamGrid=None,targOlapf=None,offset=None,shk=None, single=None):
+        self.mjd = 0 if mjd is None else mjd
+        self.header = '' if header is None else header
+        self.lamGrid = [] if lamGrid is None else lamGrid
+        self.targOlapf = [] if targOlapf is None else targOlapf
+        self.offset = 0 if offset is None else offset
+        self.shk = 0 if shk is None else shk
+        self.single = True if single is None else single
+
+        
 def hk_windows(rvcc,lamGrid,cahLam,cakLam,lamB,lamR):
     import numpy as np
     
