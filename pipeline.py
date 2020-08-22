@@ -1,119 +1,225 @@
-#This function should not be run every time the pipeline is run.
-#It only needs to be run when you have added new flat files to the data
-#A two dimensional dictionary is created for quick lookup of flat file 
-#names by their site and MJD's and stored in a pickle file to be loaded
-#in every time the pipeline is run
-def create_flat_dict_file(flatDir,fileName):
-    import pickle
-    import pprint
+#this file holds pipeline functions which are not telescope dependant
+
+#imports from a lot of data the lab frame spectra so we may cross-correlate onto this and
+#find better locations of the ca hk lines
+#taken from Ricky Egeland's code, probably could be optimized since he
+#did more with this code than we need
+
+#TODO determine if this needs change for other uses 
+def import_aligning_spectra(fluxdir, minwl=None, maxwl=None, resolution=1, residual=False):
+    import numpy as np
+    import matplotlib as mpl
+    from matplotlib import pyplot as plt
     import os
-    import astropy.io.fits
-    #find every flat file and put into dictionary
-    flatDict = dict() 
-    flatDict.update({'cpt':dict()})
-    flatDict.update({'tlv':dict()})
-    flatDict.update({'lsc':dict()})
-    flatDict.update({'elp':dict()})
-
-
-    #this loops through all the flat_....fits files in the flats directory
-    #and creates the 2 dimensional dictionary  
-    for path, subdirs, files in os.walk(flatDir):
-        for name in files:
-            if name.startswith("flat_") and name.endswith(".fits"):
-                flHDu1 = astropy.io.fits.open(os.path.join(path,name))
-                header = flHDu1[0].header
-                
-                mjd = float(header['MJD-OBS'])
-                site = header['SITEID']
-                
-                siteDict = flatDict[site]
-                siteDict.update({mjd:os.path.join(path,name)})
-                
-    f = open(flatDir+fileName,"wb")
-    pickle.dump(flatDict,f)
-    f.close()
+    import os.path
+    import re
+    import scipy
+    import scipy.signal
+    import scipy.ndimage.filters
+    import helpers as h#for constants
     
     
-#This is the NRES specific function goes through the current folder(which should be one observation)
-#and loads, from fits files, the wavelength grid, spectra, header information
-#This function is only needed when there is both old and new data from NRES and we don't know which
-#is which. When all the data is in the new format then half this function can be removed.
-def load_folder_for_pipeline(path,dirs,curFiles):
-    import os
-    import astropy.io.fits
-    import logging
+    wavelength = []
+    res_flux = []
+    irradiance = []
     
-    waveGrid = []
-    spec = []
-    header = []
-    fileName = ''#spec file name
-
-    logging.debug('1')
-    oldFormat = False
-    #see if the folder contains a -noflat or -wave file
-    #There may be a faster way to determine if this folder is old or new but I don't see a safer way
-    for file in curFiles:
-        if file.endswith("-noflat.fits") or file.endswith("-wave.fits"):
-            oldFormat = True
-            break
-
-    #we've now looped through all the files if any are old then we try old format
-    if oldFormat:
-        #print('old format')
-        #load the data in the old format
-        for file in curFiles:
-            if file.endswith("-noflat.fits"):
-                fileName = file
-                specHDu = astropy.io.fits.open(os.path.join(path,dirs,file))
-            elif file.endswith("-wave.fits"):
-                wvHDu = astropy.io.fits.open(os.path.join(path,dirs,file))
-
-        spec = specHDu[0].data[0]
-        header = specHDu[0].header
+    for f in os.listdir(fluxdir):
+        if not re.match('^lm', f): continue
+        fpath = os.path.join(fluxdir, f)
+        d = np.genfromtxt(fpath, unpack=True)
+        wavelength = np.append(wavelength, d[0]) # in nm
+        res_flux = np.append(res_flux, d[1]) # from a normalized spectra
+        irradiance = np.append(irradiance, d[2]) # from a regular spectra; mu-W / cm^2 / nm
         
-        
-        #need the length here because sometimes the wave grid is in the first element
-        #of this array but most of the time it's not 
-        if len(wvHDu)>1 and type(wvHDu[1]) == astropy.io.fits.hdu.table.BinTableHDU:
-        #print('wavehdu')   
-        #print(wvHDu.info())
-        #print(wvHDu[1].data.dtype)
-        #print(type(wvHDu[1].data))
-        #print('done')
-        #print('stuff ' + str(i))
-        #print((wvHDu[1].data)[0])
-        
-            #there are two different names for this data, it's mostly in the first name but
-            #sometimes in the second
-            try:
-                waveGrid = wvHDu[1].data['WavelenStar'][0]
-            except:
-                waveGrid=wvHDu[1].data['Wavelength'][0]
-                
-        elif len(wvHDu)>1:
-            waveGrid = (wvHDu[1].data)[0]
-        else:
-            #print(wvHDu[0].data.dtype)
-            waveGrid = (wvHDu[0].data)[0]
-            
-        specHDu.close()
-        wvHDu.close()
-    else: #ELSE IT'S NEW FORMAT and super easy
-        for file in curFiles:
-            if file.endswith(".fits"):
-                fileName = file
-                oHDu = astropy.io.fits.open(os.path.join(path,dirs,file))
-                waveGrid = oHDu[7].data
-                spec = oHDu[1].data
-                header = oHDu[0].header
-                oHDu.close()
-   #end big if              
-    if len(waveGrid) == 0 or len(spec) == 0 or len(header) == 0:
-        print('BIG PROBLEM IN load_folder_for_pipeline')
-                    
-    return waveGrid, spec, header, fileName, oldFormat
+    wavelength = np.array(wavelength)
+    res_flux = np.array(res_flux)
+    irradiance = np.array(irradiance)
+    sort = np.argsort(wavelength)
+    wavelength = wavelength[sort]
+    res_flux = res_flux[sort]
+    irradiance = irradiance[sort]
 
+    angstroms = wavelength * 10 # in Angstroms
+    
+    if minwl is None:
+        minwl = angstroms[0]
+    if maxwl is None:
+        maxwl = angstroms[-1]
+    sel = (angstroms >= minwl) & (angstroms <= maxwl)
+    dw = angstroms[1] - angstroms[0]
+    if not residual:
+        series = irradiance / 10. # nm^-1 => Ang.^-1
+    else:
+        series = res_flux
+
+    if resolution > 0:
+        series = scipy.ndimage.filters.gaussian_filter(series, resolution/dw)
+
+    #print('degrading source: ' + str(resolution/dw))
+    
+    return angstroms[sel], series[sel]
+    
+    
+#############################################
+#This is the big function we calculate our delta lambe value to place this current
+#spectra in the pipeline in the lab reference frame.
+#First we will interpolate to get these on the same grid
+#Then we do a cross correlation
+#With the cross correlation function we will fit a parabola right around the peak
+#We do this because we want to have more precision for offset than our grid will give us
+#the peak of this new parabola is the real offset
+#lots of plotting function commented out for debugging since this function does a lot and
+#could certainly be improved on.
+#TODO not called if rvcc provided for star
+def calc_del_lam(labGrid, lab, tarGrid, targ, smooth) :
+    import scipy as sc
+    #import astropy.io.fits
+    import numpy as np
+    import helpers as h#for constants
+    import numpy.polynomial.polynomial as poly
+    #import os
+    #from calc_shk import calc_shk
+    #from calc_shk import calc_targOlapf
+    #from mk_flatolap import mk_flatolap
+    from matplotlib import pyplot as plt
+    from astropy.convolution import convolve, Box1DKernel
+    from scipy import interpolate
+    
+    tmpGridScale = 1
+    dLam = tarGrid[1] - tarGrid[0]
+    #print(np.shape(targ))
+    gausdTarg = sc.ndimage.filters.gaussian_filter(targ,smooth/dLam/2)
+    
+    dLabLam = labGrid[1] - labGrid[0]
+    
+    #TODO SHOULD 2.55 be h.sigToFWHM?
+    gausedLab = sc.ndimage.filters.gaussian_filter(lab,(dLam/dLabLam)/2.55)
+
+    #get the lab spectrum into angs div by 10 on angstrom grid for our purposes
+    interpfunc = interpolate.interp1d(labGrid, gausedLab, kind='linear')#,fill_value='extrapolate')
+    labInterp=interpfunc(tarGrid)
+
+
+
+    #ZERO OUT THE EDGES OF OUR LAB SPECTRA
+    #TODO do this with strict values to remove edge errors which may affect correlation
+    #from 0 to first nonzero element of targolap
+    labInterp[:targ.nonzero()[0][0]]=0
+    #from last nonzero element to end
+    labInterp[targ.nonzero()[0][-1]:]=0
+
+    
+    #do not consider 0's while taking mean
+    labInterp[labInterp==0]=np.nan
+    targ[targ==0]=np.nan
+    
+    rmsx = np.nanmean(labInterp)
+    rmsy =  np.nanmean(targ)
+
+    #place the 0's back
+    labInterp[np.isnan(labInterp)]=0
+    targ[np.isnan(targ)]=0
+
+
+
+
+    #plt.figure(figsize=(12,6))
+    #plt.plot(1000*labInterp[targ!=0]-rmsx,'k-')
+    #plt.plot(targ[targ!=0]-rmsy,'g-')
+    #plt.show()
+    #plt.close()
+    
+    #THIS IS THE CROSS CORRELATION SECTION
+    ##
+    ##correlate must have same sized arrays input
+    correlation = np.correlate(targ[targ!=0]-rmsy,(labInterp[targ!=0]-rmsx),'full')
+    #length of the correlation array is length input array times 2 plus 1
+    #if the two arrays are already aligned then the peak of correlation function should be middle
+    middle = int((len(correlation)-1)/2)
+    
+    
+    #width is used for local maximum finding
+    #1 is a number that worked here for smarts and NRES data. MAY NEED TO BE ADJUSTED for new data
+    width = int(1/dLam)
+
+    #max value is the index of the maximum value(local max around middle of array if width used)
+    mval = middle-width+np.argmax(correlation[middle-width:middle+width])
+    
+    
+    #want to make a quadratic around mval to be more precise with 'peak' of correlation
+    #if we just use max val, precision is limited to grid spacing.
+    #need to do poly only in certain range around center because wings will take over the fit
+    fitWidth = 5
+
+    xRange = mval + np.arange(2*fitWidth)- fitWidth
+    polyFunc = np.polyfit(xRange, correlation[mval-fitWidth:mval+fitWidth],2)
+    
+    #take the derivative of the function and set equal to 0 for the peak.
+    #f=a*x^2 +b*x+c
+    #f' = 2*a*x+b = 0 -> x = -b/2a 
+    xVal = -polyFunc[1]/(2*polyFunc[0])
+    
+    #print(xVal)
+    #ffit = np.polyval(polyFunc,xRange)
+    #plt.figure()
+    #plt.xlim(mval-fitWidth*3,mval+fitWidth*3)
+    #plt.plot(xRange, ffit,'g-')
+    #plt.plot(range(len(correlation)), correlation, 'k-')
+    #plt.show()
+    #plt.close()
+    #mval= np.argmax(ffit)
+    
+    
+    #the actual lamda offset is how far from middle we are in pixel space times the
+    #pixel to grid ratio
+    offset = (xVal-middle)*(tarGrid[1]-tarGrid[0])
+    #print('offset: ' + str(offset))
+
+    
+    
+    #used for printing/debuging
+    #scale = np.mean(gausdTarg)/np.mean(labInterp)
+
+    #tmpMax = np.argmax(out)
+    #print('index of maximum: ' + str(tmpMax) + ' and adjusted delLam: ' + str(tmpMax/len(out)))
+    #print(out)
+    #fig, ax = plt.subplots(figsize=(25,5))
+    #ax.ticklabel_format(useOffset=False)
+    #plt.title("Unadjusted stellar spectra over reference spectra")
+    #plt.xlabel("Wavelength (nm)")
+    #plt.ylabel("Scaled irradiance")
+    #plt.xlim([392,398])
+    #plt.ylim([0,2800])
+    #plt.plot(tarGrid, gausdTarg, 'g-')
+    #plt.axvline(x=393.369, color='blue')
+    #plt.axvline(x=396.85, color='blue')
+    #SCALE JUST FOR VIEWING
+    #plt.plot(tarGrid,labInterp*scale, 'k-')
+    #plt.show()
+    #plt.close()
+    
+    
+    
+    #fig, ax = plt.subplots(figsize=(25,5))
+    #ax.ticklabel_format(useOffset=False)
+    #plt.title("Correlated stellar spectra over reference spectra")
+    #plt.xlabel("Wavelength (nm)")
+    #plt.ylabel("Scaled irradiance")
+    
+    #plt.xlim([392,398])
+    #plt.ylim([0,2800])
+    
+    #plt.plot(tarGrid-offset, gausdTarg, 'g-')
+    #plt.axvline(x=393.369, color='blue')
+    #plt.axvline(x=396.85, color='blue')
+
+    #plt.plot(tarGrid-offset, gausdTarg, 'k-',color='green')
+    #SCALE JUST FOR VIEWING
+    #plt.plot(tarGrid,labInterp*scale, 'k-')
+    #plt.show()
+    #plt.close()
+    
+    return offset,targ,labInterp,gausdTarg
 
 
 #Takes in the data array with reference spectra and set name, reference spectra and setname used 
@@ -129,40 +235,42 @@ def load_folder_for_pipeline(path,dirs,curFiles):
 #data[3].append(tuple((lamGrid,correlation[0],targOlapf)))
 #E
 #correlation[0] is the delta lamda to place spectra in lab frame and lamGrid is the lab frame
-def sum_daily_data(setName,inData,labSpec):
+def sum_daily_data(inData,setName,labSpec):
     from scipy import interpolate
     import numpy as np
     from calc_shk import calc_shk
     from helpers import mkdir_p
     from astropy.time import Time
-    from helpers import pdf_from_data
+    import plotting as plot
     import helpers as h
+    import numpy as np
     
     rv = 0
     done = []#array to hold which MJD are done
-    print('failfish')
+
     #make a clean copy
-    dailyData = np.asarray(inData)
+    allData = np.asarray(inData)
     
     #IF YOU DONT INCLUDE [:] THEN THIS IS A REFERENCE AND LIFE WILL STINK WHEN SORTING
     #sortedList = data[0][:]
     #datesList = dailyData[0]
     datesList = []
     sortedList = []
-    for i in range(len(dailyData)):
-        datesList.append(dailyData[i].mjd)
-        sortedList.append(dailyData[i].mjd)
-
+    for d in allData:
+        datesList.append(d.mjd)
+        sortedList.append(d.mjd)
 
 
     for i in range(len(datesList)):
         #curD = dailyData[:,i]
         #header = curD[2][0]
-        curD = dailyData[i]
+        curD = inData[i]
         header = curD.header
         
         #site = header['SITEID']
         site = header['SITEID']
+
+        h.print_header(header)
 
         #dont double up if we've alrady DONE this day
         #curMjd = curD[0]
@@ -259,7 +367,7 @@ def sum_daily_data(setName,inData,labSpec):
         decimalYr = Time(curMjd,format='mjd')
         decimalYr.format = 'decimalyear'
         title = 'NRES spectra, ' + site +', '+header['DATE-OBS']+' ('+ '{:.6}'.format(decimalYr.value) +'), S='+'{:.4}'.format(shk)
-        pdf_from_data(curLamGrid, labSpec,curLamGrid, combinedTarg,windows,title, "output/"+setName+"/"+first+"/","combined",width=.3)
+        plot.pdf_from_data(curLamGrid, labSpec,curLamGrid, combinedTarg,windows,title, "output/"+setName+"/"+first+"/","combined",width=.3)
 
         #print("c " + str(type(curMjd))+ "s " +str(type(shk)))
         #print("adding " + str(curMjd) + " with shk " + str(shk))
@@ -269,94 +377,3 @@ def sum_daily_data(setName,inData,labSpec):
         #data[3].append(tuple((curLamGrid,0,combinedTarg)))
         inData.append(h.data(curMjd,header,curLamGrid,combinedTarg,0,shk,True))
     return inData
-
-
-#this function plots the final time series of SHK values for each star
-#and is the reason for the lame format of the data array.
-#data format
-#first array is list of mjds
-#data[0].append(mjd)
-#second array is list of shks
-#data[1].append(shk)
-#third array is header data and bool saying whether it is a single observation(false) or average
-#data[2].append(tuple((header,False)))
-#fourth array is data for the nightly observation function: grid, grid offset, and spectra
-#data[3].append(tuple((lamGrid,correlation[0],targOlapf)))
-def plot_daily_data_timeseries(inData,setName,bad):
-    import numpy as np
-    import matplotlib.patches as mpatches
-    from matplotlib import pyplot as plt
-    from astropy.time import Time
-    import astropy.io.fits 
-
-
-    mjdArray=[o.mjd for o in inData]
-    shkValArray=[o.shk for o in inData]
-
-    headerArray = [o.header for o in inData]
-
-    #headerArray=np.asarray(tH)
-    boolArray=np.asarray([o.single for o in inData])
-    #mjdArray = np.asarray(inData[0])
-    #shkValArray = np.asarray(inData[1])
-    #headerArray = np.asarray(inData[2])
-    
-    fig, ax = plt.subplots(figsize=(12,6))
-    
-
-    pltStr = []
-    for i in range(len(inData)):
-        #h[0] is header
-        #h[1] is bool saying wheather it's a average observation or single
-        h=headerArray[i]
-        b=boolArray[i]
-        s = h['SITEID']
-        tStr =''
-
-        if s == 'lsc':
-            tStr +='b'
-        elif s == 'cpt':
-            tStr +='g'
-        elif s== 'elp':
-            tStr +='r'
-        elif s=='tlv':
-            tStr +='k'
-
-        if b == True:
-            tStr += 'o'
-        else:
-            tStr += '^'   
-        pltStr.append(tStr)
-    
-    t= Time(mjdArray, format='mjd')
-    t.format = 'decimalyear'
-    
-    for i in range(len(pltStr)):
-        mark = pltStr[i][1]
-        col = pltStr[i][0]
-        size = 150
-        opac = .3
-        if mark == 'o':
-            size = 100
-            opac = 1
-
-        if mjdArray[i] not in bad:    
-            plt.scatter(t[i].value,shkValArray[i],marker=mark,c=col, s=size, alpha = opac)
-        else:
-            plt.scatter(t[i].value,shkValArray[i],marker='x',c=col, s=100, alpha = opac)
-
-    rl = mpatches.Patch(color='red', label='McDonald Obs\'')
-    bl = mpatches.Patch(color='blue', label='Cerro Tololo Interamerican Obs\'')
-    gl = mpatches.Patch(color='green', label='South African Astro Obs\'')
-    kl = mpatches.Patch(color='black', label='Wise Obs\'')
-    plt.legend(handles=[rl,bl,gl,kl],prop={'size': 10}, loc=4)
-    
-
-    plt.style.use('classic')
-    ax.ticklabel_format(useOffset=False)
-    plt.title('HD '+setName+' magnetic activity time series')
-    plt.xlabel('Time(years)')
-    plt.ylabel('Unadjusted S-index')
-    plt.savefig('output/'+setName+'/'+setName+'_shk_time_series.pdf')
-    plt.show()
-    plt.close()

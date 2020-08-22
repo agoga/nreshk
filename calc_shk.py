@@ -2,7 +2,6 @@
 # Inputs are:
 #  mjd = MJD-OBS for the input spectrum.
 #  siteid = site from which observation comes.
-# rvcc = redshift of target star relative to lab. (km/s)
 #  teff = Estimated Teff of target star.
 #  extrct(nx,nord) = extracted but not flat-fielded spectra of target. (ADU)
 #  lam(nx,nord) = wavelength solution corresp to extrct. (nm)
@@ -117,7 +116,7 @@ def calc_targOlapf(lamGrid, lam, extrct, flatOlap, label):
     
     return targOlapf
     
-
+#rvcc = redshift of target star relative to lab. (km/s)
 #todo move this function to calcshk or copy comments
 # rvcc = redshift of target star relative to lab. (km/s)
 def hk_windows(rvcc,lamGrid,cahLam,cakLam,lamB,lamR):

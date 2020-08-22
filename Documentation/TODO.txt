@@ -1,3 +1,10 @@
+swap code and output to angstroms
+
+once folder order set, place functions on top for easy finding
+
+
+create function to load data that comes from np.savez NRES_SHK_Pipeline.py
+
 Try catch around single observations as well as stars to allow for large data sets to be processed despite potential errors.
 
 Old spectra format from NRES may not be running both observations. THIS IS DUE TO TWO OBS PER FOLDER 
@@ -7,11 +14,11 @@ check calc_shk is using windows function properly, may be accessing array wrong.
 set up optional radial velocity shifting(if statement to ignore cross-corr align)
 DOCUMENT THIS
 
-better documentation for alpha value and alignment detect function
+STORE A STARS BAD DATA FILE AND SKIP IT NEXT re-RUN
 
-move functions around for files, hk_windows,
+better documentation for alpha value and
+alignment detect function
 
-swap code and output to angstroms
 
 Investigate and tweek bad detection settings. Find simple star with knwon good and bad data to decide on specific values for auto-correlation.
 
