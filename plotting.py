@@ -22,12 +22,9 @@ def plot_daily_data_timeseries(inData,starName,bad):
 
     headerArray = [o.header for o in inData]
 
-    #headerArray=np.asarray(tH)
+
     boolArray=np.asarray([o.average for o in inData])
-    print(boolArray)
-    #mjdArray = np.asarray(inData[0])
-    #shkValArray = np.asarray(inData[1])
-    #headerArray = np.asarray(inData[2])
+
     
     fig, ax = plt.subplots(figsize=(12,6))
     
@@ -94,7 +91,7 @@ def plot_daily_data_timeseries(inData,starName,bad):
 ##
 ##This is the massive printing function to create a report of each observation pushed through the
 #pipeline.
-def pdf_from_intermediate_data(bGrid, base, oGrid, obs, windows, title, path, descript, flat='', width=1):
+def pdf_from_intermediate_data(bGrid, base, oGrid, obs, windows, title, path, flat='', width=1):
     import numpy as np
     from matplotlib import pyplot as plt
     from helpers import mkdir_p
@@ -138,7 +135,7 @@ def pdf_from_intermediate_data(bGrid, base, oGrid, obs, windows, title, path, de
     fig, ax = plt.subplots(figsize=(10,10))
     plt.suptitle(title)
     plt.ticklabel_format(useOffset=False)
-    with PdfPages(path+descript+"_report.pdf") as curPdf:
+    with PdfPages(path+"_report.pdf") as curPdf:
         gs = gridspec.GridSpec(4, 3)
         
         #references to each plot

@@ -408,8 +408,9 @@ def sum_daily_data(inData,starName,labSpec):
 
 
         #OUTPUT FOR FURTHER PRINTING
-        np.savez(dataPath, targOlapf=combinedTarg,flatOlap=combinedTarg, lamGrid=curLamGrid, adjLamGrid=curLamGrid,window=windows)
-        plot.pdf_from_intermediate_data(curLamGrid, labSpec,curLamGrid, combinedTarg, windows,obsP.pdfTitle(), outputDir ,obsP.hour,combinedTarg,.3)
+        np.savez(outputDir+"/combined_data", targOlapf=combinedTarg,flatOlap=combinedTarg, lamGrid=curLamGrid, adjLamGrid=curLamGrid,window=windows)
+
+        plot.pdf_from_intermediate_data(curLamGrid, labSpec,curLamGrid, combinedTarg, windows,'Combined ' + obsP.pdfTitle(), outputDir +"/combined",'',.3)#obsP.hour,combinedTarg,.3)
 
         #print("c " + str(type(curMjd))+ "s " +str(type(shk)))
         #print("adding " + str(curMjd) + " with shk " + str(shk))

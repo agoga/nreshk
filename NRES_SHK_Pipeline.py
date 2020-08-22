@@ -1,6 +1,6 @@
 #NRES SHK Specific pipeline. 
 # Order of pipeline and folder structure taylored for nres_shk
-
+import sys
 import scipy.constants as sc
 import astropy.io.fits
 import numpy as np
@@ -76,25 +76,25 @@ def create_flat_dict_file(flatDir,fileName):
     f.close()
     
 
-def old_multifile_NRES_to_data(filePath):
+def old_multifile_NRES_to_data(obsName):
     #print('old format')
     #load the data in the old format
     import os
     import astropy.io.fits
 
-    if file.endswith("-noflat.fits"):
-        fileName = filePath
-        specHDu = astropy.io.fits.open(os.path.join(path,dirs,file))
-    elif file.endswith("-wave.fits"):
-        wvHDu = astropy.io.fits.open(os.path.join(path,dirs,file))
+    splt = os.path.splitext(obsName)
+    noFlat = splt[0]+'-noflat'+splt[1]
+    wave  = splt[0]+'-wave'+splt[1]
+
+
+    fileName = obsName
+    specHDu = astropy.io.fits.open(noFlat)
+    wvHDu = astropy.io.fits.open(wave)
 
     spec = specHDu[0].data[0]
     header = specHDu[0].header
     
     
-    #need the length here because sometimes the wave grid is in the first element
-    #of this array but most of the time it's not 
-    if len(wvHDu)>1 and type(wvHDu[1]) == astropy.io.fits.hdu.table.BinTableHDU:
     #print('wavehdu')   
     #print(wvHDu.info())
     #print(wvHDu[1].data.dtype)
@@ -102,9 +102,11 @@ def old_multifile_NRES_to_data(filePath):
     #print('done')
     #print('stuff ' + str(i))
     #print((wvHDu[1].data)[0])
-    
-        #there are two different names for this data, it's mostly in the first name but
-        #sometimes in the second
+    #there are two different names for this data, it's mostly in the first name but
+    #sometimes in the second
+    #need the length here because sometimes the wave grid is in the first element
+    #of this array but most of the time it's not 
+    if len(wvHDu)>1 and type(wvHDu[1]) == astropy.io.fits.hdu.table.BinTableHDU:
         try:
             waveGrid = wvHDu[1].data['WavelenStar'][0]
         except:
@@ -118,6 +120,7 @@ def old_multifile_NRES_to_data(filePath):
         
     specHDu.close()
     wvHDu.close()
+    return waveGrid, spec, header, obsName, True
     
 #This is the NRES specific function goes through the current folder(which should be one observation)
 #and loads, from fits files, the wavelength grid, spectra, header information
@@ -141,15 +144,12 @@ def load_obs_for_pipeline(obsFileName):
     #There may be a faster way to determine if this folder is old or new but I don't see a safer way
 
     if os.path.exists(noFlat):
-        print('wowz')
         oldFormat = True
         
-    
 
     #we've now looped through all the files if any are old then we try old format
     if oldFormat:
-        return
-        old_multifile_NRES_to_data(obsFileName)
+        return old_multifile_NRES_to_data(obsFileName)
     else: #ELSE IT'S NEW FORMAT and super easy
         oHDu = astropy.io.fits.open(obsFileName)
         waveGrid = oHDu[7].data
@@ -367,9 +367,14 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun):
             #print('loading ' + dirs)
             #print('current files')
             #print(curFiles)
-
-            #TAG_0_
             folderRet = load_obs_for_pipeline(obsFileName)
+            #TAG_0_
+            #try:
+                
+            #except:
+             #   print('Error loading: ' + obsFileName)
+             #   continue
+
             if folderRet is None:
                 continue
             waveGrid = folderRet[0]#key for pipeline
@@ -505,7 +510,7 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun):
 
             #OUTPUT FOR FURTHER PRINTING
             np.savez(dataPath, targOlapf=targOlapf,flatOlap=flatOlap, lamGrid=lamGrid, adjLamGrid=lamGrid-dLam,windows=windows)
-            plot.pdf_from_intermediate_data(lamGrid, labSpec,lamGrid-dLam, targOlapf, windows,obsP.pdfTitle(), outputDir ,obsP.hour,flatOlap,.3)
+            plot.pdf_from_intermediate_data(lamGrid, labSpec,lamGrid-dLam, targOlapf, windows,obsP.pdfTitle(), outputDir+obsP.hour,flatOlap,.3)
 
             if(badSpec):
                 print('bad: ' + str(mjd))

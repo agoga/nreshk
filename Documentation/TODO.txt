@@ -1,13 +1,14 @@
 swap code and output to angstroms
 
+remove idl remenants and other obsolete code/variables
+
 once folder order set, place functions on top for easy finding
 
-
-create function to load data that comes from np.savez NRES_SHK_Pipeline.py
+Easy to use plot function to take this pipeline data and print it with other data
 
 Try catch around single observations as well as stars to allow for large data sets to be processed despite potential errors.
 
-Old spectra format from NRES may not be running both observations. THIS IS DUE TO TWO OBS PER FOLDER 
+FIXED? Old spectra format from NRES may not be running both observations. THIS IS DUE TO TWO OBS PER FOLDER 
 
 check calc_shk is using windows function properly, may be accessing array wrong.
 
@@ -17,9 +18,15 @@ DOCUMENT THIS
 STORE A STARS BAD DATA FILE AND SKIP IT NEXT re-RUN
 
 better documentation for alpha value and
-alignment detect function
+******alignment detect functionality*****
 
+make pipeline callable on remote server
+
+create function to load data that comes from np.savez NRES_SHK_Pipeline.py
 
 Investigate and tweek bad detection settings. Find simple star with knwon good and bad data to decide on specific values for auto-correlation.
 
 License update
+
+
+
