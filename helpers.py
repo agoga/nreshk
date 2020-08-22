@@ -84,7 +84,7 @@ class obsPrinter:
     file:str
 
     #cant pass header for some reason even by string and remake
-    def __init__(self, mjd,shk,offset,header,site,date,starName,average,bad,window):
+    def __init__(self, mjd=None,shk=None,offset=None,header=None,site=None,date=None,starName=None,average=None,bad=None,window=None):
 
         self.shk = 0 if shk is None else shk
         self.window = True if window is None else window
@@ -106,9 +106,7 @@ class obsPrinter:
             self.window = True if window is None else window
 
 
-        if header is None:
-            self.header= ''
-        else:
+        if header is not None:
             #print('12321')
             ##h=fits.Header.fromstring(header)
             #print_header(h)
@@ -122,6 +120,9 @@ class obsPrinter:
     
     def outputDir(self):
         return  "output/"+self.starName+"/"+self.day+"/"
+
+    def print(self):
+        print('MJD: ' + str(self.mjd) + ' and decYr ' + str(self.decimalYr) + ' w/ shk: ' + str(self.shk) + ' and offset:' + str(self.offset))
 
     def pdfTitle(self):
         t = ''
@@ -160,7 +161,7 @@ class specData:
             self.decimalYr = Time(mjd,format='mjd')
             self.decimalYr.format = 'decimalyear'
 
-        self.header = '' if header is None else header
+        self.header = None if header is None else header
 
         self.lamGrid = [] if lamGrid is None else lamGrid
         self.targOlapf = [] if targOlapf is None else targOlapf
@@ -318,3 +319,13 @@ def is_folder_star(folder):
 def get_immediate_subdirectories(a_dir):
     return [name for name in os.listdir(a_dir)
             if os.path.isdir(os.path.join(a_dir, name))]
+
+#https://stackoverflow.com/questions/21388026/find-closest-float-in-array-for-all-floats-in-another-array
+def find_closest(A, target):
+    #A must be sorted
+    idx = A.searchsorted(target)
+    idx = np.clip(idx, 1, len(A)-1)
+    left = A[idx-1]
+    right = A[idx]
+    idx -= target - left < right - target
+    return idx

@@ -229,13 +229,9 @@ def calc_del_lam(labGrid, lab, tarGrid, targ, smooth) :
 #averaged data to give a better signal to noise for these observations.
 #the output is a longer data array to be used later for printing the final 
 #This is how the data structure is created and maintained:
-#data[0].append(mjd)
-#data[1].append(shk)
-#data[2].append(tuple((header,False)))
-#data[3].append(tuple((lamGrid,correlation[0],targOlapf)))
 #E
 #correlation[0] is the delta lamda to place spectra in lab frame and lamGrid is the lab frame
-def sum_daily_data(inData,setName,labSpec):
+def sum_daily_data(inData,starName,labSpec):
     from scipy import interpolate
     import numpy as np
     from calc_shk import calc_shk
@@ -256,44 +252,65 @@ def sum_daily_data(inData,setName,labSpec):
     #datesList = dailyData[0]
     datesList = []
     sortedList = []
-    for d in allData:
-        datesList.append(d.mjd)
-        sortedList.append(d.mjd)
+    #for i in range(len(allData)):
+        #d=allData[i]
+        #datesList.append(d.mjd)
+        #sortedList.append(float(d.mjd))
+
+    #allData = np.asarray(sorted(inData,key = lambda x: x.mjd))
+    allData = sorted(inData,key = lambda x: x.mjd)
+    for curD in allData:
+        #find the closest MJD's to the current
+        #sortedList.sort(key=lambda x: abs(x - curMjd))
+        #sameD = min(enumerate(allData), key=lambda x: abs(curD.mjd - x[1].mjd))
+        sameD = allData[0]
+        oldDiff = 10 #fake val to force resets
 
 
-    for i in range(len(datesList)):
+        for t in allData:
+            if t.mjd is not curD.mjd:
+                diff = abs(curD.mjd - t.mjd)
+
+                if  diff < oldDiff:
+                    sameD = t
+                    oldDiff = diff 
+                    
+       
         #curD = dailyData[:,i]
         #header = curD[2][0]
-        curD = inData[i]
+        #curD = inData[i]
         header = curD.header
         
-        #site = header['SITEID']
-        site = header['SITEID']
 
-        h.print_header(header)
+        #h.print_header(header)
 
         #dont double up if we've alrady DONE this day
         #curMjd = curD[0]
         curMjd = curD.mjd
+        sameMjd = sameD.mjd
         if(curMjd in done):
             continue
 
-        
-        #find the closest MJD's to the current
-        sortedList.sort(key=lambda x: abs(x - curMjd))
 
         #uncomment this if you don't want nights with only 1 obs to have circles
         #if there are no observations on this day(using index 1 because 0 is the same obs)
         #if abs(curMjd - sortedList[1]) >= 1:
             #continue
-            
+        if abs(curD.mjd - sameD.mjd) >= 1:
+            print(str(curMjd) + " also has " + str(same))
+            continue
+        
+        #print('1: ' + str(curD.mjd))
+        #print('2: ' +str(sameD.mjd))
+        if header is not None:
+            #site = header['SITEID']
+            site = header['SITEID']
+        else:
+            done.append(curMjd)
+            done.append(sameMjd)
+            continue
+
         #grab the current day's values
-        #curTuple = curD[3]
-
-        #curLamGrid=curTuple[0]
-        #curTargOlapf=curTuple[2]
-        #curDLam=curTuple[1]
-
         curLamGrid=curD.lamGrid
         curTargOlapf=curD.targOlapf
         curDLam=curD.offset
@@ -306,45 +323,52 @@ def sum_daily_data(inData,setName,labSpec):
         curTarg=interpfunc(curLamGrid)
         
         combinedTarg = curTarg
+
+
         
         done.append(curMjd)
-        for i in range(len(sortedList)):
-            same = sortedList[i]
+
+        #if abs(curMjd - same) >= 1:
+        #        break
+        #
+        
+        #create an array of all the spectra that have been done, i..e these two are now done
+        #done.append(same)
+        done.append(sameMjd)
+        #grab the same day's data(will happen for multiple obs
+        #sameI = np.argmin(abs(datesList-sameMjd))
+
+        #sameTuple = dailyData[:,sameI][3]
+
+        #sameLamGrid=sameTuple[0]
+        #sameTargOlapf=sameTuple[2]
+        #sameDLam=sameTuple[1]
+        sameLamGrid=sameD.lamGrid
+        sameTargOlapf=sameD.targOlapf
+        sameDLam=sameD.offset
+
+        
+
+        #The issue is the two targetOlaps are on different grids. 
+        #Interp them on the same grid then add
+        interpfunc = interpolate.interp1d(sameLamGrid-sameDLam, sameTargOlapf, kind='linear',fill_value='extrapolate')
+        sameTarg=interpfunc(curLamGrid)
+
+        #this is the big deal, increases signal to noise for each days spectra
+        combinedTarg = combinedTarg+sameTarg
+
+        #for i in range(len(sortedList)):
+        #    same = sortedList[i]
             
             #don't do the current date
-            if same == curMjd:
-                continue
+        #    if same == curMjd:
+        #continue
                 
             #the list is sorted so once we reach a point where the obs is more than 
             #a day apart we're done
-            if abs(curMjd - same) >= 1:
-                break
-            #print(str(curMjd) + " also has " + str(same))
+        #    print(type(curMjd))
+        #    print(type(same))
             
-            #create an array of all the spectra that have been done, i..e these two are now done
-            done.append(same)
-
-            #grab the same day's data(will happen for multiple obs
-            sameI = np.argmin(abs(datesList-same))
-
-            #sameTuple = dailyData[:,sameI][3]
-
-            #sameLamGrid=sameTuple[0]
-            #sameTargOlapf=sameTuple[2]
-            #sameDLam=sameTuple[1]
-            sameLamGrid=dailyData[sameI].lamGrid
-            sameTargOlapf=dailyData[sameI].targOlapf
-            sameDLam=dailyData[sameI].offset
-
-            
-
-            #The issue is the two targetOlaps are on different grids. 
-            #Interp them on the same grid then add
-            interpfunc = interpolate.interp1d(sameLamGrid-sameDLam, sameTargOlapf, kind='linear',fill_value='extrapolate')
-            sameTarg=interpfunc(curLamGrid)
-
-            #this is the big deal, increases signal to noise for each days spectra
-            combinedTarg = combinedTarg+sameTarg
         #end combining loop
         
         
@@ -352,7 +376,7 @@ def sum_daily_data(inData,setName,labSpec):
         first = str(curMjd).split('.')[0]
         
         #lookup this star's teff
-        tempEff = h.tEffLookup[setName.strip('/')]
+        tempEff = h.tEffLookup[starName.strip('/')]
 
         #find SHK with new offset to lamda grid
         shkRet = calc_shk(curLamGrid, combinedTarg, rv, teff=tempEff)
@@ -360,14 +384,32 @@ def sum_daily_data(inData,setName,labSpec):
         shk = shkRet[0]
         windows = shkRet[1]
 
-        mkdir_p("output/"+setName+"/"+first+'/')
-        np.savez("output/"+setName+"/"+first+"/combined_data", targOlapf=combinedTarg,flatOlap=combinedTarg, lamGrid=curLamGrid, adjLamGrid=curLamGrid,windows=windows)
+        #mkdir_p("output/"+setName+"/"+first+'/')
+        #np.savez("output/"+setName+"/"+first+"/combined_data", targOlapf=combinedTarg,flatOlap=combinedTarg, lamGrid=curLamGrid, adjLamGrid=curLamGrid,windows=windows)
+        if header is not None:
+            date = header['DATE-OBS']
+
+        #decimalYr = Time(curMjd,format='mjd')
+        ##decimalYr.format = 'decimalyear'
+        #title = 'NRES spectra, ' + site +', '+header['DATE-OBS']+' ('+ '{:.6}'.format(decimalYr.value) +'), S='+'{:.4}'.format(shk)
+        #plot.pdf_from_data(curLamGrid, labSpec,curLamGrid, combinedTarg,windows,title, "output/"+setName+"/"+first+"/","combined",width=.3)
+
+        obsP = h.obsPrinter(curMjd,shk,0,header,site,date,starName,average =True,bad=False,window=windows)
+        obsD = h.specData(curMjd,header,curLamGrid,combinedTarg,0,shk,True)
+        outputDir = obsP.outputDir()
+
+        obsP.print()
+        
+        h.mkdir_p(outputDir)
+
+            
+        decimalYr = obsP.decimalYr
+        dataPath=outputDir+ obsP.hour+"_data"
 
 
-        decimalYr = Time(curMjd,format='mjd')
-        decimalYr.format = 'decimalyear'
-        title = 'NRES spectra, ' + site +', '+header['DATE-OBS']+' ('+ '{:.6}'.format(decimalYr.value) +'), S='+'{:.4}'.format(shk)
-        plot.pdf_from_data(curLamGrid, labSpec,curLamGrid, combinedTarg,windows,title, "output/"+setName+"/"+first+"/","combined",width=.3)
+        #OUTPUT FOR FURTHER PRINTING
+        np.savez(dataPath, targOlapf=combinedTarg,flatOlap=combinedTarg, lamGrid=curLamGrid, adjLamGrid=curLamGrid,window=windows)
+        plot.pdf_from_intermediate_data(curLamGrid, labSpec,curLamGrid, combinedTarg, windows,obsP.pdfTitle(), outputDir ,obsP.hour,combinedTarg,.3)
 
         #print("c " + str(type(curMjd))+ "s " +str(type(shk)))
         #print("adding " + str(curMjd) + " with shk " + str(shk))
@@ -375,5 +417,5 @@ def sum_daily_data(inData,setName,labSpec):
         #data[1].append(shk)
         #data[2].append(tuple((header,True)))
         #data[3].append(tuple((curLamGrid,0,combinedTarg)))
-        inData.append(h.data(curMjd,header,curLamGrid,combinedTarg,0,shk,True))
+        inData.append(h.specData(curMjd,header,curLamGrid,combinedTarg,0,shk,True))
     return inData

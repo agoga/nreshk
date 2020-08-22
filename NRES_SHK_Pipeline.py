@@ -467,13 +467,15 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun):
             #TAG_5_
             #time to toss bad spec so they won't be summed
             badSpec = False
+            badReason ='Bad'
             #not included but may need to be, check if any values of targolapf
             #are negative. Makes sense to me that those spectra should be tossed
             badSpec = h.bad_spec_detection_v2(lamGrid-dLam,targOlapf)          
             
             #among other things?!
             if shk < 0 or shk > 1 or flatRet[2] == True:
-                badSpec = True          
+                badSpec = True
+               #badReason.append()          
 
             if badSpec:
                 badD.append(mjd)
@@ -487,10 +489,11 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun):
             #second = label.split("/")[1]
 
             #this observations data and printer
-            obsP = h.obsPrinter(mjd,shk,dLam,header,site,date,starName,False,badSpec,windows)
-            obsD = h.specData(mjd,header,lamGrid,targOlapf,dLam,shk,False)
+            obsP = h.obsPrinter(mjd,shk,dLam,header,site,date,starName,average=False,bad=badSpec,window=windows)
+            obsD = h.specData(mjd,header,lamGrid,targOlapf,dLam,shk,window=windows,average=False)
             outputDir = obsP.outputDir()
- 
+
+            obsP.print()
             
 
             h.mkdir_p(outputDir)
@@ -518,11 +521,12 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun):
         #many parts of the above code must be changed. The below would not need to be changed.
         #TAG_6_
 
-        #tryData = pipe.sum_daily_data(tryData,starName,labSpec)
+        tryData = pipe.sum_daily_data(tryData,starName,labSpec)
         #data = pipe.sum_daily_data(starName,data,labSpec)
         #TAG_7_
         #TAG_8_
         #TAG_9_
+
         plot.plot_daily_data_timeseries(tryData,starName,badD)
         #pipe.plot_daily_data_timeseries(data,starName,bad)
         

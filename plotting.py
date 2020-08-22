@@ -24,6 +24,7 @@ def plot_daily_data_timeseries(inData,starName,bad):
 
     #headerArray=np.asarray(tH)
     boolArray=np.asarray([o.average for o in inData])
+    print(boolArray)
     #mjdArray = np.asarray(inData[0])
     #shkValArray = np.asarray(inData[1])
     #headerArray = np.asarray(inData[2])
