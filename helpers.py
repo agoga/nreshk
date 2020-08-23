@@ -7,6 +7,7 @@ from astropy.io import fits
 import astropy.io.fits
 import astropy.io.fits.header
 from astropy.time import Time
+import copy
 c=2.99792458e5  #speed of light (km/s)
 
 cahLam=396.847# 396.967 #   #Ca II H line wavelength (nm, vacuum)
@@ -62,67 +63,121 @@ tEffLookup = {"1835":5837,
 
 def print_header(header):
     for h in header.keys():
-        print(h, header[h])
-#NRES SPECIFIC MAYBE CAN GO IN OTHER FILE
-class obsPrinter:
-    mjd:float#
-    star:str
-    day:str#MJD without the decimals
-    hours:str#Just the MJD decimals
+        print(h, header[h])    
+        
+#hopefully not SHK dependant, move to pipeline        
+class rawData:
     header:astropy.io.fits.header.Header#
-    #to make printing easier 
-    offset:float
+    spec:list
+    fitsFile:str
+    format:bool#change to int for more than 2 formats
+    waveGrid:list
+    mjd:float#
     site:str#header['SITEID']
     date:str#header['DATE-OBS']
+    star:str
+
+
+    #def __init__(self, target=None):
+    ##    if orig is None:
+      #      self._constructor()
+      #  else:
+      #      self._copy_constructor(target)
+
+    def __init__(self=None,star=None,waveGrid=None,spec=None,header=None,fileName=None,format=None,copy=None):
+        if copy is None:
+            self.header = header
+            self.star = star
+            self.mjd = header['MJD-OBS']
+            self.site = header['SITEID']
+            self.date = header['DATE-OBS']
+            self.spec=spec
+            self.header=header
+            self.fitsFile=fileName
+            self.format=format 
+            self.waveGrid = waveGrid
+        else:
+            self.header = copy.header
+            self.star = copy.star
+            self.mjd = copy.mjd
+            self.site = copy.site
+            self.date = copy.date
+            self.spec=copy.spec
+            self.fitsFile=copy.fitsFile
+            self.format=copy.format 
+            self.waveGrid = copy.waveGrid
+
+    
+
+
+#TODO maybe make rawData which specData and printData inherit from.
+#not a NRES SHK specific function            
+class analyzedData(rawData):
+    flat:[]
+
+    offset:float#to make printing easier
+    shk:float#
+    window:[]#windows
+
+    day:int
+    hour:int
+    
     shk:float#
     decimalYr:Time
     label:str
-    average:bool#
-    window:[]#windows
-    starName:str
+
     bad:bool
-    file:str
+    lamGrid:list#
+    targOlapf:list#
+
+    average:bool#
+
+         
 
     #cant pass header for some reason even by string and remake
-    def __init__(self, mjd=None,shk=None,offset=None,header=None,site=None,date=None,starName=None,average=None,bad=None,window=None):
+    def __init__(self, raw=None,lamGrid=None,flat=None,targOlapf=None, shk=None,offset=None,average=None,bad=None,window=None):
+        if raw is not None:
+            super().__init__(copy=raw)
 
-        self.shk = 0 if shk is None else shk
-        self.window = True if window is None else window
-        self.bad=bad
-        self.average=average
-        self.offset = offset
-        self.starName = starName
         #self.file = True if file is None else file
-
-
-        if mjd is None:
-            self.mjd = 0 
-        else:
-            self.mjd = mjd
-            self.day = str(int(np.floor(mjd)))
-            self.hour = str(mjd).split('.')[1]
+        if self.mjd is not None:
+            mjd = self.mjd
+            self.day = int(np.floor(mjd))
+            self.hour = int(str(mjd).split('.')[1])
             self.decimalYr = Time(mjd,format='mjd')
             self.decimalYr.format = 'decimalyear'
-            self.window = True if window is None else window
 
-
-        if header is not None:
-            #print('12321')
-            ##h=fits.Header.fromstring(header)
-            #print_header(h)
-            self.header=header
- 
-            self.site = header['SITEID']
-            self.date = header['DATE-OBS']
+        self.bad=bad
+        self.flat = flat
+        self.lamGrid = lamGrid
+        self.targOlapf = targOlapf
+        self.offset = offset
+        self.shk = shk
+        self.average = average
+        self.window = window
     
-            self.label = 'MJD: ' + str(mjd) + ' and decYr ' + str(self.decimalYr) + ' w/ shk: ' + str(shk) + ' and offset:' + str(self.offset)
 
-    
+    #def day_str(self):
+     #   return str(self.day)
+
+    #def hour_str(self):
+    #    return str(selfhour)
+
+
+    def raw(self):#for 
+        return self
+
+    def data_path(self):
+        if self.average is None:
+            return self.outputDir()+str(oData.hour)+"_data"
+        else:
+            return self.outputDir()+"/combined_data"
+
+    def label(self):
+        return 'MJD: ' + str(self.mjd) + ' and decYr ' + str(self.decimalYr) + ' w/ shk: ' + str(self.shk) + ' and offset:' + str(self.offset)
+
     def outputDir(self):
-        return  "output/"+self.starName+"/"+self.day+"/"
-
-    def print(self):
-        print('MJD: ' + str(self.mjd) + ' and decYr ' + str(self.decimalYr) + ' w/ shk: ' + str(self.shk) + ' and offset:' + str(self.offset))
+        return  "output/"+self.star+"/"+str(self.day)+"/"
 
     def pdfTitle(self):
         t = ''
@@ -130,45 +185,9 @@ class obsPrinter:
             t = 'bad '
         t += 'NRES spectra, ' + self.site +', '+self.date+' ('+ '{:.6}'.format(self.decimalYr.value) +'), S='+'{:.4}'.format(self.shk)
         return t
+            
         
 
-        
-
-
-        
-
-
-#not a NRES SHK specific function            
-class specData:
-    mjd:float#
-    header:astropy.io.fits.header.Header#
-    lamGrid:list#
-    targOlapf:list#
-    offset:float#
-    shk:float#
-    average:bool#
-    window:[]#windows
-    #tempEff
-
-    def __init__(self, mjd=None,header=None,lamGrid=None,targOlapf=None,offset=None,shk=None,window=None,average=None):
-        
-        if mjd is None:
-            self.mjd = 0 
-        else:
-            self.mjd = mjd
-            self.day = np.floor(mjd)
-            self.hours = str(mjd).replace('.','/')
-            self.decimalYr = Time(mjd,format='mjd')
-            self.decimalYr.format = 'decimalyear'
-
-        self.header = None if header is None else header
-
-        self.lamGrid = [] if lamGrid is None else lamGrid
-        self.targOlapf = [] if targOlapf is None else targOlapf
-        self.offset = 0 if offset is None else offset
-        self.shk = 0 if shk is None else shk
-        self.average = True if average is None else average
-        self.window = True if window is None else window
 
 #https://stackoverflow.com/questions/11373610/save-matplotlib-file-to-a-directory
 def mkdir_p(mypath):

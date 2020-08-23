@@ -1,8 +1,12 @@
+DONT DELETE ITEMS, USE FIXED FOR FEATURE LIST
+
 swap code and output to angstroms
 
 remove idl remenants and other obsolete code/variables
 
 once folder order set, place functions on top for easy finding
+
+cofirm 
 
 Easy to use plot function to take this pipeline data and print it with other data
 
@@ -16,6 +20,10 @@ set up optional radial velocity shifting(if statement to ignore cross-corr align
 DOCUMENT THIS
 
 STORE A STARS BAD DATA FILE AND SKIP IT NEXT re-RUN
+
+
+#TODO FIX THIS AND ALL ARRAY SHAPES TO FOLLOW PYTHON LOADING
+
 
 better documentation for alpha value and
 ******alignment detect functionality*****

@@ -38,13 +38,13 @@ def make_random_data(n):
     b = []
     for p in r:
         d = 58890 +20*p
-        b.append(h.specData(d))
-        b.append(h.specData(d+.5,))
+        b.append(h.analyzedData(d))
+        b.append(h.analyzedData(d+.1,))
 
     return b
 
 
 def test_daily_data_sum():
-    r = make_random_data(4)
+    r = make_random_data(10)
 
     pipe.sum_daily_data(r,'',[])

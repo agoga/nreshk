@@ -165,7 +165,7 @@ def calc_shk(lamGrid, targOlapf, rvcc, teff=6200.):
     gain=3.4           # e-/ADU
     kk=31.             # factor to make shk into equivalent width (a guess!)
     
-    
+
     
     #this function gives us the regions of our arrays which hold the information we need to sum
     windows = hk_windows(rvcc, lamGrid,h.cahLam,h.cakLam,h.lamB,h.lamR)[0]

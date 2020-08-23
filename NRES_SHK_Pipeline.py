@@ -76,18 +76,18 @@ def create_flat_dict_file(flatDir,fileName):
     f.close()
     
 
-def old_multifile_NRES_to_data(obsName):
+def old_multifile_NRES_to_data(obsFileName):
     #print('old format')
     #load the data in the old format
     import os
     import astropy.io.fits
-
-    splt = os.path.splitext(obsName)
+    data=None
+    splt = os.path.splitext(obsFileName)
     noFlat = splt[0]+'-noflat'+splt[1]
     wave  = splt[0]+'-wave'+splt[1]
 
 
-    fileName = obsName
+    fileName = obsFileName
     specHDu = astropy.io.fits.open(noFlat)
     wvHDu = astropy.io.fits.open(wave)
 
@@ -117,10 +117,12 @@ def old_multifile_NRES_to_data(obsName):
     else:
         #print(wvHDu[0].data.dtype)
         waveGrid = (wvHDu[0].data)[0]
-        
+
+    star = header['OBJ1']
+    data = h.rawData(star,waveGrid, spec, header, obsFileName, True) 
     specHDu.close()
     wvHDu.close()
-    return waveGrid, spec, header, obsName, True
+    return data
     
 #This is the NRES specific function goes through the current folder(which should be one observation)
 #and loads, from fits files, the wavelength grid, spectra, header information
@@ -136,7 +138,7 @@ def load_obs_for_pipeline(obsFileName):
     fileName = ''#spec file name
     oldFormat = False
 
-
+    data=None
     splitF = os.path.splitext(obsFileName)
     #create the no flat file to check it's existence
     noFlat = splitF[0]+'-noflat'+splitF[1]
@@ -155,12 +157,14 @@ def load_obs_for_pipeline(obsFileName):
         waveGrid = oHDu[7].data
         spec = oHDu[1].data
         header = oHDu[0].header
+        star = header['OBJ1']
+        data = h.rawData(star,waveGrid,spec,header,obsFileName,oldFormat)  
         oHDu.close()
    #end big if              
     #if len(waveGrid) == 0 or len(spec) == 0 or len(header) == 0:
     #   print('BIG PROBLEM IN load_folder_for_pipeline')
-                    
-    return waveGrid, spec, header, obsFileName, oldFormat
+         
+    return data
 
 
 # This routine makes a wavelength grid spanning lamran[2], with constant
@@ -308,21 +312,32 @@ def mk_flatolap(lam, flat, idl=''):
     #flatOlap-the overlapped flat on these ranges
     return lamGrid, flatOlap, bad
 
-    #this is the BIG wrapper. This handles all the folder structure stuff and manages the
-    #pipeline. The general outline of pipeline is(search tag to find general location);
-    #
-    #TAG_0_ import data to arrays
-    #TAG_1_ create flat field
-    #TAG_2_ remove instrumental error by dividing out flat field
-    #TAG_3_ align stellar spectrum to reference by cross correlation
-    #TAG_4_ find ca HK emission reversal and calculate s-index(shk)
-    #TAG_5_ detect bad spectra and erronous data and remove from final product
-    #TAG_6_ Sum spectra from each night(2-3 obs per night) to increase signal/noise
-    #TAG_7_ Calculate S-index for each nights combined data
-    #TAG_8_ print intermediate pdfs(for single and combined obs) for debugging into output folder
-    #TAG_9_ plot final time series of star with all good data included
-    #
-    #loop through each star as desired
+
+
+
+
+def find_and_make_flat(obs):
+    return
+    
+
+
+
+
+#this is the BIG wrapper. This handles all the folder structure stuff and manages the
+#pipeline. The general outline of pipeline is(search tag to find general location);
+#
+#TAG_0_ import data to arrays
+#TAG_1_ create flat field
+#TAG_2_ remove instrumental error by dividing out flat field
+#TAG_3_ align stellar spectrum to reference by cross correlation
+#TAG_4_ find ca HK emission reversal and calculate s-index(shk)
+#TAG_5_ detect bad spectra and erronous data and remove from final product
+#TAG_6_ Sum spectra from each night(2-3 obs per night) to increase signal/noise
+#TAG_7_ Calculate S-index for each nights combined data
+#TAG_8_ print intermediate pdfs(for single and combined obs) for debugging into output folder
+#TAG_9_ plot final time series of star with all good data included
+#
+#loop through each star as desired
 def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun):
     starName = ''
 
@@ -349,7 +364,7 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun):
         starName = s
         #need blank arrays to append to since we don't know length due to bad spectra
         #data = [[],[],[],[]]
-        tryData =[]
+        analyzed =[]
 
         dailyData = dict()
 
@@ -367,7 +382,7 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun):
             #print('loading ' + dirs)
             #print('current files')
             #print(curFiles)
-            folderRet = load_obs_for_pipeline(obsFileName)
+            obsRaw = load_obs_for_pipeline(obsFileName)
             #TAG_0_
             #try:
                 
@@ -375,26 +390,23 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun):
              #   print('Error loading: ' + obsFileName)
              #   continue
 
-            if folderRet is None:
+            if obsRaw is None:
                 continue
-            waveGrid = folderRet[0]#key for pipeline
-            spec = folderRet[1]#key for pipeline
-            header = folderRet[2]
-            obsFileName = folderRet[3]
-            old = folderRet[4]#is old format or not, for debugging
-        
-
+            
+            #waveGrid = folderRet[0]#key for pipeline
+            #spec = folderRet[1]#key for pipeline
+            ##header = folderRet[2]
+            #obsFileName = folderRet[3]
+            #old = folderRet[4]#is old format or not, for debugging
 
             #if you have data from a different system you may just want to simulate the header
             #dictionary.
-            mjd = header['MJD-OBS']
-            site = header['SITEID']
-            date = header['DATE-OBS']
+            
 
             
-            label=str(mjd).replace('.','/')
+            label=str(obsRaw.mjd).replace('.','/')
 
-            tempEff = h.tEffLookup[starName.strip('/')]
+            
 
             #title for pdfs
             title = ''
@@ -404,13 +416,13 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun):
 
             #try to find a flat otherwise fail
             #try:
-            fD = flatDict[site]
+            fD = flatDict[obsRaw.site]
             #flatDates = list(flatDict.keys())
             #flatDates.sort(key=lambda x: abs(x - mjd))
-            fK = h.closestKey(fD,float(mjd))
+            fK = h.closestKey(fD,float(obsRaw.mjd))
 
             flatFilePath = fD[fK]
-            
+
             ##8/21/2020 was fHDu = astropy.io.fits.open(os.path.join(path,flatFilePath))
             fHDu = astropy.io.fits.open(os.path.join(starPath,flatFilePath))
 
@@ -420,10 +432,10 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun):
             #    print('BAD BAD closest for: '+str(mjd) +' is '+ str(abs(mjd-fK)))
             #elif abs(mjd-fK) > 2:
             #    print('closest for: '+str(mjd) +' is '+ str(abs(mjd-fK)))
-            
+
             #TAG_1_
             #give multiple arrays of flats whose lam values are stored in multiple wave grid arrays
-            flatRet = mk_flatolap(waveGrid, flat)
+            flatRet = mk_flatolap(obsRaw.waveGrid, flat)
 
             #except:
             # print('bad flat find with site: ' + site + ' and date ' + str(obsDate))
@@ -436,7 +448,7 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun):
 
             #TAG_2_
             #get the target data minus the flat
-            targOlapf = calc_targOlapf(lamGrid, waveGrid, spec, flatOlap, label)
+            targOlapf = calc_targOlapf(lamGrid, obsRaw.waveGrid, obsRaw.spec, flatOlap, label)
 
             #TAG_3_
             #cross correlation returns a lambda offset(dlam) and save the lab spectra
@@ -454,7 +466,7 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun):
             #atm we're not going to apply the radial velocity and just use the adjusted spectra
             rv = 0#rv/10000 
 
-
+            tempEff = h.tEffLookup[starName.strip('/')]
             
             #TAG_4_
             #find SHK with new offset to lamda grid
@@ -483,7 +495,7 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun):
                #badReason.append()          
 
             if badSpec:
-                badD.append(mjd)
+                badD.append(obsRaw.mjd)
 
             
 
@@ -494,29 +506,27 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun):
             #second = label.split("/")[1]
 
             #this observations data and printer
-            obsP = h.obsPrinter(mjd,shk,dLam,header,site,date,starName,average=False,bad=badSpec,window=windows)
-            obsD = h.specData(mjd,header,lamGrid,targOlapf,dLam,shk,window=windows,average=False)
-            outputDir = obsP.outputDir()
+            #oData = h.analyzedData(obsRaw.header,obsRaw.mjd,lamGrid,flat,targOlapf,dLam,shk,window=windows,average=False)
+            #                   raw=None,lamGrid=None,flat=None,targOlapf=None, shk=None,offset=None,average=None,bad=None,window=None):
+            oData = h.analyzedData(obsRaw,lamGrid,flatOlap,targOlapf,shk,dLam,False,badSpec,windows)
 
-            obsP.print()
+            outputDir = oData.outputDir()
+            decimalYr = oData.decimalYr
+            
+            print(oData.label())
             
 
             h.mkdir_p(outputDir)
-
-            
-            decimalYr = obsP.decimalYr
-            dataPath=outputDir+ obsP.hour+"_data"
-
-
             #OUTPUT FOR FURTHER PRINTING
-            np.savez(dataPath, targOlapf=targOlapf,flatOlap=flatOlap, lamGrid=lamGrid, adjLamGrid=lamGrid-dLam,windows=windows)
-            plot.pdf_from_intermediate_data(lamGrid, labSpec,lamGrid-dLam, targOlapf, windows,obsP.pdfTitle(), outputDir+obsP.hour,flatOlap,.3)
+            #np.savez(dataPath, targOlapf=oData.targOlapf,flatOlap=flatOlap, lamGrid=oData.lamGrid, offset=oData.offset,windows=oData.window)
+            plot.pdf_from_intermediate_data(lamGrid, labSpec,oData,.3)
+
 
             if(badSpec):
-                print('bad: ' + str(mjd))
+                print('bad: ' + str(obsRaw.mjd))
                 continue
 
-            tryData.append(obsD)
+            analyzed.append(oData)
             
         #end of star loop 
         
@@ -526,13 +536,13 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun):
         #many parts of the above code must be changed. The below would not need to be changed.
         #TAG_6_
 
-        tryData = pipe.sum_daily_data(tryData,starName,labSpec)
+        analyzed = pipe.sum_daily_data(analyzed,starName,labSpec)
         #data = pipe.sum_daily_data(starName,data,labSpec)
         #TAG_7_
         #TAG_8_
         #TAG_9_
 
-        plot.plot_daily_data_timeseries(tryData,starName,badD)
+        plot.plot_timeseries(analyzed,starName,badD)
         #pipe.plot_daily_data_timeseries(data,starName,bad)
         
         # 

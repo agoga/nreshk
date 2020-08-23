@@ -9,7 +9,7 @@
 #data[2].append(tuple((header,False)))
 #fourth array is data for the nightly observation function: grid, grid offset, and spectra
 #data[3].append(tuple((lamGrid,correlation[0],targOlapf)))
-def plot_daily_data_timeseries(inData,starName,bad):
+def plot_timeseries(inData,starName,bad):
     import numpy as np
     import matplotlib.patches as mpatches
     from matplotlib import pyplot as plt
@@ -91,7 +91,8 @@ def plot_daily_data_timeseries(inData,starName,bad):
 ##
 ##This is the massive printing function to create a report of each observation pushed through the
 #pipeline.
-def pdf_from_intermediate_data(bGrid, base, oGrid, obs, windows, title, path, flat='', width=1):
+#def pdf_from_intermediate_data(bGrid, base, oGrid, obs, windows, title, path, flat='', width=1):
+def pdf_from_intermediate_data(bGrid, base, oData, width=1):
     import numpy as np
     from matplotlib import pyplot as plt
     from helpers import mkdir_p
@@ -99,12 +100,21 @@ def pdf_from_intermediate_data(bGrid, base, oGrid, obs, windows, title, path, fl
     import matplotlib.gridspec as gridspec
     import scipy as sc
     import helpers as h#for constants
-    
-    
-    calH = h.cahLam#396.847#TODO and make global
+
+    path = oData.outputDir()+str(oData.hour)  
+    title = oData.pdfTitle()
+    windows = oData.window
+    oGrid = oData.lamGrid
+    flat = oData.flat
+    obs = oData.targOlapf
+    calH = h.cahLam#396.847
     calK = h.cakLam#393.366
     #center of red continuum band (nm, vacuum)
     
+
+    #IF DEBUG TODO
+    np.savez(oData.data_path(), analyzedData=oData)
+
     lamR=h.lamR
     
     #if flat was passed as empty, fill it with nans
