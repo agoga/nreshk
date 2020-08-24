@@ -9,12 +9,13 @@
 #data[2].append(tuple((header,False)))
 #fourth array is data for the nightly observation function: grid, grid offset, and spectra
 #data[3].append(tuple((lamGrid,correlation[0],targOlapf)))
-def plot_timeseries(inData,starName,bad):
+def plot_timeseries(inData,bad):
     import numpy as np
     import matplotlib.patches as mpatches
     from matplotlib import pyplot as plt
     from astropy.time import Time
     import astropy.io.fits 
+    import helpers as h
 
 
     mjdArray=[o.mjd for o in inData]
@@ -28,14 +29,22 @@ def plot_timeseries(inData,starName,bad):
     
     fig, ax = plt.subplots(figsize=(12,6))
     
-
+    starName = ''
+    outputDir = ''
+    if inData is not None:
+        starName = inData[0].star
+        outputDir = inData[0].starDir()
     pltStr = []
-    for i in range(len(inData)):
+    t = []
+    #for i in range(len(inData)):
+    for d in inData:
         #h[0] is header
         #h[1] is bool saying wheather it's a average observation or single
-        h=headerArray[i]
-        b=boolArray[i]
-        s = h['SITEID']
+        #header=headerArray[i]
+        #b=boolArray[i]
+        #s = inData.site
+        b=d.average
+        s=d.site
         tStr =''
 
         if s == 'lsc':
@@ -52,9 +61,10 @@ def plot_timeseries(inData,starName,bad):
         else:
             tStr += '^'   
         pltStr.append(tStr)
+        t.append(d.decimalYr)
     
-    t= Time(mjdArray, format='mjd')
-    t.format = 'decimalyear'
+    #t= Time(mjdArray, format='mjd')
+    #t.format = 'decimalyear'
     
     for i in range(len(pltStr)):
         mark = pltStr[i][1]
@@ -77,12 +87,14 @@ def plot_timeseries(inData,starName,bad):
     plt.legend(handles=[rl,bl,gl,kl],prop={'size': 10}, loc=4)
     
 
+    h.mkdir_p(outputDir)
+
     plt.style.use('classic')
     ax.ticklabel_format(useOffset=False)
     plt.title('HD '+starName+' magnetic activity time series')
     plt.xlabel('Time(years)')
     plt.ylabel('Unadjusted S-index')
-    plt.savefig('output/'+starName+'/'+starName+'_shk_time_series.pdf')
+    plt.savefig(outputDir+starName+'_shk_time_series.pdf')
     plt.show()
     plt.close()
 
@@ -95,16 +107,18 @@ def plot_timeseries(inData,starName,bad):
 def pdf_from_intermediate_data(bGrid, base, oData, width=1):
     import numpy as np
     from matplotlib import pyplot as plt
-    from helpers import mkdir_p
     from matplotlib.backends.backend_pdf import PdfPages
     import matplotlib.gridspec as gridspec
     import scipy as sc
     import helpers as h#for constants
 
-    path = oData.outputDir()+str(oData.hour)  
+    dailyPath = oData.obsDir() 
+
+
+
     title = oData.pdfTitle()
     windows = oData.window
-    oGrid = oData.lamGrid
+    oGrid = oData.lamGrid - oData.offset #Shift the grid by the offset if any
     flat = oData.flat
     obs = oData.targOlapf
     calH = h.cahLam#396.847
@@ -112,8 +126,9 @@ def pdf_from_intermediate_data(bGrid, base, oData, width=1):
     #center of red continuum band (nm, vacuum)
     
 
+    h.mkdir_p(dailyPath)
     #IF DEBUG TODO
-    np.savez(oData.data_path(), analyzedData=oData)
+    np.savez(dailyPath+str(oData.hour), analyzedData=oData)
 
     lamR=h.lamR
     
@@ -145,7 +160,7 @@ def pdf_from_intermediate_data(bGrid, base, oData, width=1):
     fig, ax = plt.subplots(figsize=(10,10))
     plt.suptitle(title)
     plt.ticklabel_format(useOffset=False)
-    with PdfPages(path+"_report.pdf") as curPdf:
+    with PdfPages(dailyPath+str(oData.hour)+"_report.pdf") as curPdf:
         gs = gridspec.GridSpec(4, 3)
         
         #references to each plot

@@ -355,12 +355,13 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun):
             print('bad folder \'' + s + '\'')
             continue
         #if the star has an output folder and isnt forced to run we won't run again
-        if os.path.exists(outputPath+s+'/') and s not in forceRun:
-            print("HD " + s + " already has output")
+        if os.path.exists(outputPath+s) and s not in forceRun:
+            print(s + " already has output")
             continue
         
         print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
         print("Running pipeline on HD " + s)
+        print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
         starName = s
         #need blank arrays to append to since we don't know length due to bad spectra
         #data = [[],[],[],[]]
@@ -374,6 +375,7 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun):
         #Find all the files that may be correct
         obsUn = glob.glob(starPath+'\\**\\*-e91.fits', recursive=True)
         obsFiles = [r for r in obsUn if not "output" in r]
+        print('len files' + str(len(obsFiles)))
 
         #star loop
         for obsFileName in obsFiles:
@@ -383,6 +385,7 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun):
             #print('current files')
             #print(curFiles)
             obsRaw = load_obs_for_pipeline(obsFileName)
+            obsRaw.star=s#sometimes the fits file will have a different star than the file name
             #TAG_0_
             #try:
                 
@@ -510,13 +513,12 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun):
             #                   raw=None,lamGrid=None,flat=None,targOlapf=None, shk=None,offset=None,average=None,bad=None,window=None):
             oData = h.analyzedData(obsRaw,lamGrid,flatOlap,targOlapf,shk,dLam,False,badSpec,windows)
 
-            outputDir = oData.outputDir()
+            outputDir = oData.starDir()
             decimalYr = oData.decimalYr
             
             print(oData.label())
             
 
-            h.mkdir_p(outputDir)
             #OUTPUT FOR FURTHER PRINTING
             #np.savez(dataPath, targOlapf=oData.targOlapf,flatOlap=flatOlap, lamGrid=oData.lamGrid, offset=oData.offset,windows=oData.window)
             plot.pdf_from_intermediate_data(lamGrid, labSpec,oData,.3)
@@ -542,7 +544,7 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun):
         #TAG_8_
         #TAG_9_
 
-        plot.plot_timeseries(analyzed,starName,badD)
+        plot.plot_timeseries(analyzed,badD)
         #pipe.plot_daily_data_timeseries(data,starName,bad)
         
         # 
@@ -553,7 +555,9 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun):
             #walk through each folder this is the main loop over all observations
             #each dir here should only contain one observation
             #print(subdirs)
-
+        print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+        print("Running pipeline on HD " + s)
+        print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
             
     print(badD)
 

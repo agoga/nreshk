@@ -235,7 +235,6 @@ def sum_daily_data(inData,starName,labSpec):
     from scipy import interpolate
     import numpy as np
     from calc_shk import calc_shk
-    from helpers import mkdir_p
     from astropy.time import Time
     import plotting as plot
     import helpers as h
@@ -359,13 +358,13 @@ def sum_daily_data(inData,starName,labSpec):
         combData = h.analyzedData(curD.raw(),curD.lamGrid,[],combinedTarg,shk,0,True,False,windows)
 
 
-        outputDir = combData.outputDir()
+        outputDir = combData.obsDir()
         decimalYr = combData.decimalYr
 
         print(combData.label())
         
 
-        h.mkdir_p(outputDir)
+        #h.mkdir_p(outputDir)
         #OUTPUT FOR FURTHER PRINTING
         #plot.pdf_from_intermediate_data(curLamGrid, labSpec,curLamGrid, combinedTarg, windows,'Combined ' + obsP.pdfTitle(), outputDir +"/combined",'',.3)#obsP.hour,combinedTarg,.3)
 

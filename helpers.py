@@ -176,7 +176,10 @@ class analyzedData(rawData):
     def label(self):
         return 'MJD: ' + str(self.mjd) + ' and decYr ' + str(self.decimalYr) + ' w/ shk: ' + str(self.shk) + ' and offset:' + str(self.offset)
 
-    def outputDir(self):
+    def starDir(self):
+        return  "output/"+self.star+"/"
+
+    def obsDir(self):
         return  "output/"+self.star+"/"+str(self.day)+"/"
 
     def pdfTitle(self):
@@ -195,7 +198,6 @@ def mkdir_p(mypath):
 
     from errno import EEXIST
     from os import makedirs,path
-
     try:
         makedirs(mypath)
     except OSError as exc: # Python >2.5

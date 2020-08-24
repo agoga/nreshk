@@ -26,7 +26,6 @@ def calc_targOlapf(lamGrid, lam, extrct, flatOlap, label):
     import astropy.io.fits
     import os
     from matplotlib import pyplot as plt
-    from helpers import mkdir_p 
     from astropy.convolution import convolve, Box1DKernel
     from matplotlib.backends.backend_pdf import PdfPages
     

@@ -1,7 +1,6 @@
 from scipy import interpolate
 import numpy as np
 from calc_shk import calc_shk
-from helpers import mkdir_p
 from astropy.time import Time
 import plotting as plot
 import helpers as h
