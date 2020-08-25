@@ -283,16 +283,9 @@ def sum_daily_data(inData,starName,labSpec):
         sameMjd = sameD.mjd
         header = curD.header
 
-        #uncomment this if you don't want nights with only 1 obs to have circles
-        #if there are no observations on this day(using index 1 because 0 is the same obs)
-        #if abs(curMjd - sortedList[1]) >= 1:
-            #continue
-        #if abs(curD.mjd - sameD.mjd) >= 1:
-         #   print(str(curMjd) + " also has " + str(same))
-          #  continue
+
 
         if curD.header is not None:
-            #site = header['SITEID']
             site = curD.site
         else:
             done.append(curMjd)
@@ -326,52 +319,32 @@ def sum_daily_data(inData,starName,labSpec):
                 
             #the list is sorted so once we reach a point where the obs is more than 
             #a day apart we're done
-        #    print(type(curMjd))
-        #    print(type(same))
         #these two are now done
         done.append(curMjd)
         done.append(sameMjd)
 
         #end combining loop
 
-        
-        #lookup this star's teff
-        print('tempEff lookup')
-        tempEff = h.tEffLookup[starName.strip('/')]
-
-        #find SHK with new offset to lamda grid
-        shkRet = calc_shk(curD.lamGrid, combinedTarg, rv, teff=tempEff)
+                #find SHK with new offset to lamda grid
+        shkRet = calc_shk(curD.lamGrid, combinedTarg,curD)
 
         shk = shkRet[0]
         windows = shkRet[1]
 
-        #mkdir_p("output/"+setName+"/"+first+'/')
-        #np.savez("output/"+setName+"/"+first+"/combined_data", targOlapf=combinedTarg,flatOlap=combinedTarg, lamGrid=curLamGrid, adjLamGrid=curLamGrid,windows=windows)
-        #if header is not None:
-         #   date = header['DATE-OBS']
-
-        #decimalYr = Time(curMjd,format='mjd')
-        ##decimalYr.format = 'decimalyear'
-        #title = 'NRES spectra, ' + site +', '+header['DATE-OBS']+' ('+ '{:.6}'.format(decimalYr.value) +'), S='+'{:.4}'.format(shk)
-        #plot.pdf_from_data(curLamGrid, labSpec,curLamGrid, combinedTarg,windows,title, "output/"+setName+"/"+first+"/","combined",width=.3)
-        #raw=None,lamGrid=None,flat=None,targOlapf=None, shk=None,offset=None,average=None,bad=None,window=None):
         combData = h.analyzedData(curD.raw(),curD.lamGrid,[],combinedTarg,shk,0,True,False,windows)
 
 
-        outputDir = combData.obsDir()
+        outputDir = combData.outputDir()
         decimalYr = combData.decimalYr
 
         print(combData.label())
         
 
-        #h.mkdir_p(outputDir)
-        #OUTPUT FOR FURTHER PRINTING
-        #plot.pdf_from_intermediate_data(curLamGrid, labSpec,curLamGrid, combinedTarg, windows,'Combined ' + obsP.pdfTitle(), outputDir +"/combined",'',.3)#obsP.hour,combinedTarg,.3)
-
-        #np.savez(dataPath, targOlapf=oData.targOlapf,flatOlap=flatOlap, lamGrid=oData.lamGrid, offset=oData.offset,windows=oData.window)
-        plot.pdf_from_intermediate_data(curD.lamGrid, labSpec,combData,.3)
-        #obsP = h.obsPrinter(header,curMjd,shk,0,site,date,starName,average =True,bad=False,window=windows)
-        #obsD = h.specData(header,curMjd,curLamGrid,combinedTarg,0,shk,True)
         
+        #OUTPUT FOR FURTHER PRINTING
+        if h.pdfMode == 0:
+            plot.pdf_from_intermediate_data(curD.lamGrid, labSpec,combData,.3)
+
+        #h.mkdir_p(outputDir)
         inData.append(combData)
     return inData

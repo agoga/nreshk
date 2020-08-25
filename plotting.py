@@ -1,15 +1,5 @@
 #this function plots the final time series of SHK values for each star
-#and is the reason for the lame format of the data array.
-#data format
-#first array is list of mjds
-#data[0].append(mjd)
-#second array is list of shks
-#data[1].append(shk)
-#third array is header data and bool saying whether it is a single observation(false) or average
-#data[2].append(tuple((header,False)))
-#fourth array is data for the nightly observation function: grid, grid offset, and spectra
-#data[3].append(tuple((lamGrid,correlation[0],targOlapf)))
-def plot_timeseries(inData,bad):
+def plot_timeseries(inData,bad, fig = None, ax = None):
     import numpy as np
     import matplotlib.patches as mpatches
     from matplotlib import pyplot as plt
@@ -21,14 +11,14 @@ def plot_timeseries(inData,bad):
     mjdArray=[o.mjd for o in inData]
     shkValArray=[o.shk for o in inData]
 
-    headerArray = [o.header for o in inData]
+    if fig is None and ax is None:
+        fig, ax = plt.subplots(figsize=(12,6))
+       
+    singleIconSize = 100
+    averageIconSize = 130
+    singleOpacity = .4
+    averageOpacity = 1
 
-
-    boolArray=np.asarray([o.average for o in inData])
-
-    
-    fig, ax = plt.subplots(figsize=(12,6))
-    
     starName = ''
     outputDir = ''
     if inData is not None:
@@ -36,55 +26,42 @@ def plot_timeseries(inData,bad):
         outputDir = inData[0].starDir()
     pltStr = []
     t = []
-    #for i in range(len(inData)):
-    for d in inData:
-        #h[0] is header
-        #h[1] is bool saying wheather it's a average observation or single
-        #header=headerArray[i]
-        #b=boolArray[i]
-        #s = inData.site
-        b=d.average
+
+
+    for i in range(len(inData)):
+        d = inData[i]
+
+        avg=d.average
         s=d.site
-        tStr =''
 
-        if s == 'lsc':
-            tStr +='b'
-        elif s == 'cpt':
-            tStr +='g'
-        elif s== 'elp':
-            tStr +='r'
-        elif s=='tlv':
-            tStr +='k'
-
-        if b == True:
-            tStr += 'o'
+        size = singleIconSize
+        opac = singleOpacity
+        
+        if s in h.siteColors:
+            col = h.siteColors[s][0]
         else:
-            tStr += '^'   
-        pltStr.append(tStr)
-        t.append(d.decimalYr)
-    
-    #t= Time(mjdArray, format='mjd')
-    #t.format = 'decimalyear'
-    
-    for i in range(len(pltStr)):
-        mark = pltStr[i][1]
-        col = pltStr[i][0]
-        size = 150
-        opac = .3
+            col = 'y'#some ugly default if we failed to update the site color dict
+
+        if d.bad in bad:
+            mark ='x'
+        elif avg == True:
+            mark = 'o'#circle
+        else:
+            mark = '^'#triangle
+
         if mark == 'o':
-            size = 100
-            opac = 1
+            size = averageIconSize
+            opac = averageOpacity
+        ax.scatter(d.decimalYr.value,d.shk,marker=mark,edgecolors='k', c=col, s=size, alpha=opac)
+    
+    sites =[]
+    for key in h.siteColors:
+        siteCol = h.siteColors[key][0]
+        siteName = h.siteColors[key][1]
+        p = mpatches.Patch(color=siteCol, label=siteName)
+        sites.append(p)
 
-        if mjdArray[i] not in bad:    
-            plt.scatter(t[i].value,shkValArray[i],marker=mark,c=col, s=size, alpha = opac)
-        else:
-            plt.scatter(t[i].value,shkValArray[i],marker='x',c=col, s=100, alpha = opac)
-
-    rl = mpatches.Patch(color='red', label='McDonald Obs\'')
-    bl = mpatches.Patch(color='blue', label='Cerro Tololo Interamerican Obs\'')
-    gl = mpatches.Patch(color='green', label='South African Astro Obs\'')
-    kl = mpatches.Patch(color='black', label='Wise Obs\'')
-    plt.legend(handles=[rl,bl,gl,kl],prop={'size': 10}, loc=4)
+    plt.legend(handles=sites,prop={'size': 10}, bbox_to_anchor=(1.04,1), loc="upper left")
     
 
     h.mkdir_p(outputDir)
@@ -93,7 +70,7 @@ def plot_timeseries(inData,bad):
     ax.ticklabel_format(useOffset=False)
     plt.title('HD '+starName+' magnetic activity time series')
     plt.xlabel('Time(years)')
-    plt.ylabel('Unadjusted S-index')
+    plt.ylabel('Adjusted S-index with α:'+str(h.alpha))
     plt.savefig(outputDir+starName+'_shk_time_series.pdf')
     plt.show()
     plt.close()
@@ -112,7 +89,7 @@ def pdf_from_intermediate_data(bGrid, base, oData, width=1):
     import scipy as sc
     import helpers as h#for constants
 
-    dailyPath = oData.obsDir() 
+    
 
 
 
@@ -125,10 +102,19 @@ def pdf_from_intermediate_data(bGrid, base, oData, width=1):
     calK = h.cakLam#393.366
     #center of red continuum band (nm, vacuum)
     
+    #create the directories for pdf plotting and save every intermediate data array
 
-    h.mkdir_p(dailyPath)
+    outputDir = oData.outputDir()
+    dataPath = oData.data_path()
+    reportPath = oData.report_path()
+    #probably want to move the data saving to a different function
+    h.mkdir_p(outputDir)
+
+
+    #probably want to move the data saving to a different function
     #IF DEBUG TODO
-    np.savez(dailyPath+str(oData.hour), analyzedData=oData)
+    np.savez(dataPath, analyzedData=oData)
+    
 
     lamR=h.lamR
     
@@ -160,7 +146,7 @@ def pdf_from_intermediate_data(bGrid, base, oData, width=1):
     fig, ax = plt.subplots(figsize=(10,10))
     plt.suptitle(title)
     plt.ticklabel_format(useOffset=False)
-    with PdfPages(dailyPath+str(oData.hour)+"_report.pdf") as curPdf:
+    with PdfPages(reportPath) as curPdf:
         gs = gridspec.GridSpec(4, 3)
         
         #references to each plot

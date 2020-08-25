@@ -8,6 +8,10 @@ import astropy.io.fits
 import astropy.io.fits.header
 from astropy.time import Time
 import copy
+
+
+alpha=43.             # factor to make shk into equivalent width (a guess!)
+
 c=2.99792458e5  #speed of light (km/s)
 
 cahLam=396.847# 396.967 #   #Ca II H line wavelength (nm, vacuum)
@@ -24,6 +28,11 @@ conWid=2.0         #wavelength width of continuum bands (nm, vacuum)
 lineWid=.109       #FWHM of line core window functions (nm, vacuum)
     
 sigToFWHM = 2.355#used to display a real FWHM value on plots where smoothing occurs
+
+siteColors = {  'lsc':["b","Cerro Tololo Interamerican Obs\'"],
+                'cpt':["g","South African Astro Obs\'"],
+                'elp':["r","McDonald Obs\'"],
+                'tlv':["k","Wise Obs\'"]}
 
 tEffLookup = {"1835":5837,
               "12235":6097,
@@ -85,6 +94,7 @@ class rawData:
       #      self._copy_constructor(target)
 
     def __init__(self=None,star=None,waveGrid=None,spec=None,header=None,fileName=None,format=None,copy=None):
+        self.mjd = None
         if copy is None:
             self.header = header
             self.star = star
@@ -139,14 +149,17 @@ class analyzedData(rawData):
         if raw is not None:
             super().__init__(copy=raw)
 
-        #self.file = True if file is None else file
-        if self.mjd is not None:
+
+        if hasattr(self,'mjd') and self.mjd is not None:
             mjd = self.mjd
             self.day = int(np.floor(mjd))
             self.hour = int(str(mjd).split('.')[1])
             self.decimalYr = Time(mjd,format='mjd')
             self.decimalYr.format = 'decimalyear'
+        else:
+            self.mjd = None
 
+        
         self.bad=bad
         self.flat = flat
         self.lamGrid = lamGrid
@@ -155,23 +168,26 @@ class analyzedData(rawData):
         self.shk = shk
         self.average = average
         self.window = window
-    
-
-    #def day_str(self):
-     #   return str(self.day)
-
-    #def hour_str(self):
-    #    return str(selfhour)
-
 
     def raw(self):#for 
         return self
 
+    def outputDir(self):
+        return "output/"+self.star+"/"+str(self.day)+"/"
+    #if this is an average then we put it in the day's folder as day_combined_data and save it slightly diff
+    #location that the data should go to
     def data_path(self):
-        if self.average is None:
-            return self.outputDir()+str(oData.hour)+"_data"
+        if self.average is False:
+            return self.outputDir()+str(self.hour)+"_data"
         else:
-            return self.outputDir()+"/combined_data"
+            return self.outputDir()+str(self.day)+"_combined_data"
+
+    #location pdf reports go to
+    def report_path(self):
+        if self.average is False:
+            return  self.outputDir()+str(self.hour)+"_report.pdf"
+        else:
+            return  self.outputDir()+str(self.day)+"_combined_report.pdf"
 
     def label(self):
         return 'MJD: ' + str(self.mjd) + ' and decYr ' + str(self.decimalYr) + ' w/ shk: ' + str(self.shk) + ' and offset:' + str(self.offset)
@@ -179,8 +195,7 @@ class analyzedData(rawData):
     def starDir(self):
         return  "output/"+self.star+"/"
 
-    def obsDir(self):
-        return  "output/"+self.star+"/"+str(self.day)+"/"
+    
 
     def pdfTitle(self):
         t = ''
@@ -219,7 +234,7 @@ def bad_spec_detection_v2(lamGrid, targ):
     #TODO maybe take the maximum out of the mean for a different ratio.
     mean = np.mean(correlation[39900:40100])
     maxi = max(correlation[39900:40100])
-    print("bad correlation: " + str(maxi/mean)) 
+    #print("bad correlation: " + str(maxi/mean)) 
     
     #plt.figure()
     #plt.plot(range(len(targ)),targ)

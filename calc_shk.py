@@ -18,7 +18,7 @@
 
 #the original calc_shk function has been split into calc_targOlapf and calc_shk to better 
 #debug intermediate values 
-def calc_targOlapf(lamGrid, lam, extrct, flatOlap, label):
+def calc_targOlapf(lamGrid, lam, extrct, flatOlap):
     ##intializations and hardcoded inputs
     import numpy as np
     import scipy.io as sc
@@ -152,22 +152,29 @@ def hk_windows(rvcc,lamGrid,cahLam,cakLam,lamB,lamR):
 #which is not currently used. I have left it in case we decide later to use it
 #over cross-correlation
 #rvcc is optional parameter if we want radial velocity shift
-def calc_shk(lamGrid, targOlapf, rvcc, teff=6200.):
+def calc_shk(lamGrid, targOlapf, raw):
     import helpers as h#for constants
     
     from astropy.modeling.blackbody import blackbody_lambda
     from astropy import units as u
     from matplotlib import pyplot as plt
     
+    starName=raw.star.strip('/')
     
     
     gain=3.4           # e-/ADU
-    kk=31.             # factor to make shk into equivalent width (a guess!)
-    
 
     
+    #atm we're not going to apply the radial velocity and just use the adjusted spectra
+    rv = 0#rv/10000 Need RV dictionary
+    tempEff = 0 #base value if not found BUT BAD
+    tempEff = h.tEffLookup[starName]
+    if tempEff is 0:
+        print('Update temperature for HD ' + starName)
+        tempEff = 6200
+    
     #this function gives us the regions of our arrays which hold the information we need to sum
-    windows = hk_windows(rvcc, lamGrid,h.cahLam,h.cakLam,h.lamB,h.lamR)[0]
+    windows = hk_windows(rv, lamGrid,h.cahLam,h.cakLam,h.lamB,h.lamR)[0]
 
     fh=(targOlapf*windows[:,0]).sum()
     fk=(targOlapf*windows[:,1]).sum()
@@ -191,13 +198,13 @@ def calc_shk(lamGrid, targOlapf, rvcc, teff=6200.):
     #plt.close()
     
     #the SHK calculation with pseudo V-Band
-    plFactor = blackbody_lambda(h.lamB*u.nm,teff*u.K).value/blackbody_lambda(h.lamR*u.nm,teff*u.K).value
+    plFactor = blackbody_lambda(h.lamB*u.nm,tempEff*u.K).value/blackbody_lambda(h.lamR*u.nm,tempEff*u.K).value
 
     fb = fr*plFactor
 
     num = (fh+fk)*gain
     den = (fr+fb)*gain
-    shk = kk*(fh+fk)/(fr+fb)
+    shk = h.alpha*(fh+fk)/(fr+fb)
     #print("shk: "+ str(shk))
 
     return shk, windows, fr/fb
