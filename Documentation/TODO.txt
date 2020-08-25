@@ -6,7 +6,7 @@ remove idl remenants and other obsolete code/variables
 
 once folder order set, place functions on top for easy finding
 
-cofirm 
+cofirm that we should always use filename for star over the star name from fits header
 
 Easy to use plot function to take this pipeline data and print it with other data
 
