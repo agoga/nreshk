@@ -172,8 +172,7 @@ class analyzedData(rawData):
     def raw(self):#for 
         return self
 
-    def outputDir(self):
-        return "output/"+self.star+"/"+str(self.day)+"/"
+    
     #if this is an average then we put it in the day's folder as day_combined_data and save it slightly diff
     #location that the data should go to
     def data_path(self):
@@ -195,7 +194,8 @@ class analyzedData(rawData):
     def starDir(self):
         return  "output/"+self.star+"/"
 
-    
+    def outputDir(self):
+        return "output/"+self.star+"/"+str(self.day)+"/"
 
     def pdfTitle(self):
         t = ''
