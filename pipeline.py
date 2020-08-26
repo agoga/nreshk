@@ -245,24 +245,17 @@ def sum_daily_data(inData,starName,labSpec):
 
     #make a clean copy
     allData = np.asarray(inData)
-    
-    #IF YOU DONT INCLUDE [:] THEN THIS IS A REFERENCE AND LIFE WILL STINK WHEN SORTING
-    #sortedList = data[0][:]
-    #datesList = dailyData[0]
+
     datesList = []
     sortedList = []
-    #for i in range(len(allData)):
-        #d=allData[i]
-        #datesList.append(d.mjd)
-        #sortedList.append(float(d.mjd))
 
-    #allData = np.asarray(sorted(inData,key = lambda x: x.mjd))
-    #allData = sorted(inData,key = lambda x: x.day)
+
     for curD in allData:
         #find the closest MJD's to the current
-        #sortedList.sort(key=lambda x: abs(x - curMjd))
-        #sameD = min(enumerate(allData), key=lambda x: abs(curD.mjd - x[1].mjd))
-        sameD = None
+
+        
+        #sameD = None
+        sameD = [curD]#initialize the same day list 
         curMjd = curD.mjd #dont double up if we've alrady DONE this day
 
         if(curMjd in done):
@@ -271,67 +264,65 @@ def sum_daily_data(inData,starName,labSpec):
         #grab the same day's data(will happen for multiple obs)
         for t in allData:
             if t.hour != curD.hour and t.day == curD.day:
-                sameD=t
-                break
+                #sameD=t
+                sameD.append(t)
+                #break
 
         #if there is no other obs on this day or if cur
-        #if len(sameD) is 0:
-        if sameD is None:
+        #if sameD is None:
+        if len(sameD) is 1: 
             done.append(curMjd)
             continue
         
-        sameMjd = sameD.mjd
-        header = curD.header
 
 
+        header = curD.header#for faking the data
+        mjd = curD.mjd
 
         if curD.header is not None:
-            site = curD.site
+            site = curD.site 
         else:
-            done.append(curMjd)
-            done.append(sameMjd)
-            continue
-
-       
+            for d in sameD:
+                done.append(d)
+            print('sun_daily_data missing header very bad')
+            continue#go past this day something very wrong
         
-        #need to interpolate because all the observations have slightly different lamda grids
-        #put them all onto the referece spectra's grid held in curLamGrid
-        interpfunc = interpolate.interp1d(curD.lamGrid-curD.offset, curD.targOlapf, kind='linear',fill_value='extrapolate')
-        curTarg=interpfunc(curD.lamGrid)
+        combinedTarg = np.zeros(len(curD.targOlapf))
+        lamGrid = curD.lamGrid#use the same lamGrid for all of the observations to average
+        #sameMjd = sameD.mjd
+        for day in sameD:
         
-
-        combinedTarg = curTarg        
-
-        #The issue is the two targetOlaps are on different grids. 
-        #Interp them on the same grid then add
-        interpfunc = interpolate.interp1d(sameD.lamGrid-sameD.offset, sameD.targOlapf, kind='linear',fill_value='extrapolate')
-        sameTarg=interpfunc(curD.lamGrid)
-
-        #this is the big deal, increases signal to noise for each days spectra
-        combinedTarg = combinedTarg+sameTarg
-
-        #for i in range(len(sortedList)):
-        #    same = sortedList[i]
+            #need to interpolate because all the observations have slightly different lamda grids
+            #put them all onto the referece spectra's grid held in curLamGrid
+            interpfunc = interpolate.interp1d(day.lamGrid-day.offset, day.targOlapf, kind='linear',fill_value='extrapolate')
+            combinedTarg+=interpfunc(lamGrid)
             
-            #don't do the current date
-        #    if same == curMjd:
-        #continue
-                
-            #the list is sorted so once we reach a point where the obs is more than 
-            #a day apart we're done
-        #these two are now done
-        done.append(curMjd)
-        done.append(sameMjd)
+
+            #combinedTarg = curTarg        
+
+            #The issue is the two targetOlaps are on different grids. 
+            #Interp them on the same grid then add
+            #interpfunc = interpolate.interp1d(sameD.lamGrid-sameD.offset, sameD.targOlapf, kind='linear',fill_value='extrapolate')
+            #sameTarg=interpfunc(curD.lamGrid)
+
+            #this is the big deal, increases signal to noise for each days spectra
+            #combinedTarg = combinedTarg+sameTarg
+
+                    
+            #these two are now done
+            done.append(day)
+            #done.append(curMjd)
+            #done.append(sameMjd)
 
         #end combining loop
 
-                #find SHK with new offset to lamda grid
-        shkRet = calc_shk(curD.lamGrid, combinedTarg,curD)
+        #find SHK with new offset to lamda grid
+        shkRet = calc_shk(lamGrid, combinedTarg,curD)
 
         shk = shkRet[0]
         windows = shkRet[1]
 
-        combData = h.analyzedData(curD.raw(),curD.lamGrid,[],combinedTarg,shk,0,True,False,windows)
+        combData = h.analyzedData(curD.raw(),lamGrid,[],combinedTarg,shk,0,True,False,windows)
 
 
         outputDir = combData.outputDir()

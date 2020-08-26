@@ -29,6 +29,9 @@ lineWid=.109       #FWHM of line core window functions (nm, vacuum)
     
 sigToFWHM = 2.355#used to display a real FWHM value on plots where smoothing occurs
 
+lowGOrd = 63
+highGOrd = 66
+
 siteColors = {  'lsc':["b","Cerro Tololo Interamerican Obs\'"],
                 'cpt':["g","South African Astro Obs\'"],
                 'elp':["r","McDonald Obs\'"],
@@ -142,9 +145,6 @@ class analyzedData(rawData):
 
     average:bool#
 
-         
-
-    #cant pass header for some reason even by string and remake
     def __init__(self, raw=None,lamGrid=None,flat=None,targOlapf=None, shk=None,offset=None,average=None,bad=None,window=None):
         if raw is not None:
             super().__init__(copy=raw)
@@ -206,7 +206,6 @@ class analyzedData(rawData):
             
         
 
-
 #https://stackoverflow.com/questions/11373610/save-matplotlib-file-to-a-directory
 def mkdir_p(mypath):
     '''Creates a directory. equivalent to using mkdir -p on the command line'''
@@ -221,7 +220,6 @@ def mkdir_p(mypath):
         else: raise
             
 
-        
         
 #the idea behind this function is to auto-correlate a spectra.
 #if the spectra is not complete noise then the correlation function will have a small peek at 0

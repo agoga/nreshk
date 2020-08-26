@@ -176,7 +176,7 @@ def load_obs_for_pipeline(obsFileName):
 # of the effect of varying dlambda/dx in the original spectra.  Results are
 # written to a FITS file named in outfile (full pathname), and a new line
 # describing this output is added to $STAGE2ROOT/flatolap.csv.
-def mk_flatolap(lam, flat, idl=''):
+def mk_flatolap(lam, flat):
     #WORKING MK_FLATOLAP
     ##PORT OF DR. TIM BROWN'S NRES HK CODE 
     ##comments marked brown are Dr. Brown's
@@ -191,12 +191,12 @@ def mk_flatolap(lam, flat, idl=''):
     from astropy.convolution import convolve, Box1DKernel
 
 
+    gOrd = np.arange(h.lowGOrd,h.highGOrd+1)
 
     ##intializations and hardcoded inputs TODO fix hardcoded?
     ##mk_flatolap
     lamRan=[380.,420.]
     dLam =0.001
-    gOrd=[63,64,65,66]
     nGord= len(gOrd)
     nx=4096
     bounds=[[615,3803],[670,3770],[733,3740],[750,3660]]
@@ -293,13 +293,6 @@ def mk_flatolap(lam, flat, idl=''):
     #plt.show()
     #plt.close()
 
-
-
-    #idlHdu = astropy.io.fits.open(idlfilepath+idlFlatFile)
-    if idl != '':
-        idlData = idl['flatolap']#idlHdu[0].data[1]#
-        plt.plot(lamGrid, idlData, 'k-', color='blue')
-        plt.plot(lamGrid, abs(flatOlap-idlData), color='green')
         
     #this returns to the pipeline that we have a bad flat    
     if max(flatOlap) > 1.5:

@@ -125,3 +125,4 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+old_output/non-kepler.txt
