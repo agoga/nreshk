@@ -61,7 +61,7 @@ def plot_timeseries(inData,bad, fig = None, ax = None):
         p = mpatches.Patch(color=siteCol, label=siteName)
         sites.append(p)
 
-    plt.legend(handles=sites,prop={'size': 10}, bbox_to_anchor=(1.04,1), loc="upper left")
+    plt.legend(handles=sites,prop={'size': 10}, loc="upper left",bbox_to_anchor=(1.04,1))
     
 
     h.mkdir_p(outputDir)
@@ -71,7 +71,7 @@ def plot_timeseries(inData,bad, fig = None, ax = None):
     plt.title('HD '+starName+' magnetic activity time series')
     plt.xlabel('Time(years)')
     plt.ylabel('Adjusted S-index with α:'+str(h.alpha))
-    plt.savefig(outputDir+starName+'_shk_time_series.pdf')
+    plt.savefig(outputDir+starName+'_shk_time_series.pdf',bbox_inches='tight')
     plt.show()
     plt.close()
 
