@@ -50,12 +50,12 @@ cakLam=393.366#393.485 #    #Ca II K line wavelength (nm, vacuum)
 
 
 #center of blue continuum band (nm, vacuum)
-lamB=390.2176-.116#subtraction is the offset from our lab values     
+lamB=390.2176-.116 +.5#subtraction is the offset from our lab values     
 #center of red continuum band (nm, vacuum)
 #TODO TAKE FROM VAUGHAN 1978 subtraction is the offset from our lab values 
-lamR=400.2204-.116#subtraction is the offset from our lab values  
+lamR=400.2204-.116-.5#subtraction is the offset from our lab values  
 
-conWid=2.0         #wavelength width of continuum bands (nm, vacuum)
+conWid=1.5#2.0         #wavelength width of continuum bands (nm, vacuum)
 lineWid=.109       #FWHM of line core window functions (nm, vacuum)
     
 sigToFWHM = 2.355#used to display a real FWHM value on plots where smoothing occurs

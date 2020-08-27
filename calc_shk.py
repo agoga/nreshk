@@ -61,8 +61,9 @@ def calc_targOlapf(raw,lamGrid, flatOlap):
     lam=raw.waveGrid
     extrct=raw.spec
     
-    rdnoi=7.*np.sqrt(5.*5.)           # read noise per resolution element in e-
-    resel=.0015                       #resolution element (nm)
+    #old T. Brown constants
+    #rdnoi=7.*np.sqrt(5.*5.)           # read noise per resolution element in e-
+    #resel=.0015                       #resolution element (nm)
 
 
     #brown
@@ -120,8 +121,6 @@ def calc_targOlapf(raw,lamGrid, flatOlap):
     #targOlapf[sg] = targOlap[i]/flatOlap[i]
     for i in sg :
         targOlapf[i] = targOlap[i]/flatOlap[i]
-
-
 
 
     #fig = plt.figure()

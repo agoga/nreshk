@@ -246,8 +246,8 @@ def sum_daily_data(inData,starName,labSpec):
         
         #sameD = None
         sameD = [curD]#initialize the same day list 
-        curMjd = curD.mjd #dont double up if we've alrady DONE this day
 
+        curMjd = curD.mjd #dont double up if we've alrady DONE this day
         if(curMjd in done):
             continue
 
@@ -257,11 +257,11 @@ def sum_daily_data(inData,starName,labSpec):
                 #sameD=t
                 sameD.append(t)
                 #break
+            
 
         #if there is no other obs on this day or if cur
-        #if sameD is None:
         if len(sameD) is 1: 
-            done.append(curMjd)
+            done.append(curMjd)#must be the MJD not class obj
             continue
         
 
@@ -273,7 +273,7 @@ def sum_daily_data(inData,starName,labSpec):
             site = curD.site 
         else:
             for d in sameD:
-                done.append(d)
+                done.append(d.mjd)
             print('sun_daily_data missing header very bad')
             continue#go past this day something very wrong
         
@@ -297,12 +297,8 @@ def sum_daily_data(inData,starName,labSpec):
 
             #this is the big deal, increases signal to noise for each days spectra
             #combinedTarg = combinedTarg+sameTarg
-
-                    
             #these two are now done
-            done.append(day)
-            #done.append(curMjd)
-            #done.append(sameMjd)
+            done.append(day.mjd)
 
         #end combining loop
 

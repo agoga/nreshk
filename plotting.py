@@ -122,7 +122,7 @@ def pdf_from_intermediate_data(bGrid, base, oData, width=1):
     if flatMax != 0:
         #create a bool array which describes in our grid sections of the flat which higher than .4th of flat max
         #print(flatMax)
-        flatSection = flat/flatMax >= .4
+        flatSection = flat/flatMax >= .01#basically want all of the stuff
 
         #used to set axis bounds
         mini = min(bGrid[flatSection])
@@ -241,6 +241,8 @@ def pdf_from_intermediate_data(bGrid, base, oData, width=1):
             targPlt.set_xlim([mini,maxi])
             targPlt.plot(bGrid[flatSection],base[flatSection]*avgS,color='lightgray')
             targPlt.plot(oGrid[flatSection],obs[flatSection],'b-')
+            #print(mini)
+            #print(maxi)
         else:
             targPlt.set_xlim([391.5,407])
             targPlt.plot(bGrid[base!=0],base[base!=0]*avgS,color='lightgray')

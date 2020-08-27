@@ -185,6 +185,7 @@ def mk_flatolap(raw, flat):
 
     gOrd = np.arange(h.lowGOrd,highOrd)
 
+    print(flat.shape)
     ##intializations and hardcoded inputs TODO fix hardcoded?
     ##mk_flatolap
     lamRan=[380.,420.]
@@ -192,14 +193,14 @@ def mk_flatolap(raw, flat):
     nGord= len(gOrd)
     nx=raw.nx
 
-    print(highOrd)
     #bounds provides the cut off for each order, anthing below the low and above the high 
     #index of each order in the flat file will be ignored
-    bounds=[[615,3803],[670,3770],[733,3740],[750,3660]]
-
-    if highOrd == 68:#this is super hacked but I dont know a better way atm 8/2020
-        bounds.append([770,3650])
-
+    #bounds=[[615,3803],[670,3770],[733,3740],[750,3660]]
+    bounds =[]
+    #if highOrd == 68:#this is super hacked but I dont know a better way atm 8/2020
+    #    bounds.append([780,3600])
+    for i in range(nGord):
+        bounds.append([600,3800])
     bad = False
     #read filesfits
 
@@ -276,18 +277,9 @@ def mk_flatolap(raw, flat):
     #output[:,0] = lamGrid    
     #output[:,1] = flatOlap  
 
-    #plt.figure(figsize=(30,5))
-    #plt.style.use('classic')
-    #plot python data
-    #plt.plot(lamGrid, flatOlap, 'k-')
-    #plt.title('Orders 63-67 of flat field added togeather')
-    #plt.xlim([391.5,408])
-    ##plt.xlabel('wavelength [nm]')
-    #plt.ylabel('flatOlap')
-    #plt.show()
-    #plt.close()
+    #there should not be negatives so remove them
+    flatOlap = flatOlap.clip(min=0)
 
-        
     #this returns to the pipeline that we have a bad flat    
     if max(flatOlap) > 1.5:
         #print("bad flat detected mk_flatolap.py")
@@ -297,6 +289,7 @@ def mk_flatolap(raw, flat):
     ##OUTPUTS
     #lamGrid-the x val of all these plots
     #flatOlap-the overlapped flat on these ranges
+    #bad-
     return lamGrid, flatOlap, bad
 
 
