@@ -11,10 +11,12 @@ import time
 
 import scipy.constants as sc
 import numpy as np
+from scipy import interpolate
 from astropy.time import Time
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib import pyplot as plt
 from astropy.convolution import convolve, Box1DKernel
+
 
 import helpers as h
 import pipeline as pipe
@@ -115,7 +117,10 @@ def old_multifile_NRES_to_data(obsFileName):
         waveGrid = (wvHDu[0].data)[0]
 
     star = header['OBJ1']
-    data = h.rawData(star,waveGrid, spec, header, obsFileName, True) 
+    nOrd = header['NORD']
+    nx = header['NX']
+    data = h.rawData(star,waveGrid,spec,header,obsFileName,True,nOrd,nx)  
+    
     specHDu.close()
     wvHDu.close()
     return data
@@ -154,7 +159,7 @@ def load_obs_for_pipeline(obsFileName):
         star = header['OBJ1']
         nOrd = header['NORD']
         nx = header['NX']
-        data = h.rawData(star,waveGrid,spec,header,obsFileName,oldFormat)  
+        data = h.rawData(star,waveGrid,spec,header,obsFileName,oldFormat,nOrd,nx)  
         oHDu.close()
    #end big if              
     #if len(waveGrid) == 0 or len(spec) == 0 or len(header) == 0:
@@ -169,30 +174,34 @@ def load_obs_for_pipeline(obsFileName):
 # the corresponding wavelength scale from the reduced/thar directory.
 # It trims and smooths the 4 bluemost orders of the flat field, and then
 # interpolates and sums the 4 flats onto the wavelength grid, taking account
-# of the effect of varying dlambda/dx in the original spectra.  Results are
-# written to a FITS file named in outfile (full pathname), and a new line
-# describing this output is added to $STAGE2ROOT/flatolap.csv.
-def mk_flatolap(lam, flat):
+# of the effect of varying dlambda/dx in the original spectra.
+def mk_flatolap(raw, flat):
     #WORKING MK_FLATOLAP
     ##PORT OF DR. TIM BROWN'S NRES HK CODE 
     ##comments marked brown are Dr. Brown's
 
+    lam = raw.waveGrid
+    highOrd = raw.nOrd#virtually always we want to go to highest(lowest wavelength) order
 
-    gOrd = np.arange(h.lowGOrd,h.highGOrd+1)
+    gOrd = np.arange(h.lowGOrd,highOrd)
 
     ##intializations and hardcoded inputs TODO fix hardcoded?
     ##mk_flatolap
     lamRan=[380.,420.]
     dLam =0.001
     nGord= len(gOrd)
-    nx=4096
+    nx=raw.nx
+
+    #bounds provides the cut off for each order, anthing below the low and above the high 
+    #index of each order in the flat file will be ignored
     bounds=[[615,3803],[670,3770],[733,3740],[750,3660]]
+
+    if highOrd == 68:#this is super hacked but I dont know a better way atm 8/2020
+        bounds.append([770,3650])
 
     bad = False
     #read filesfits
-    #TRANSPOSE THE STRAIGHT DATA BC IDL CODE HAS REVERSED DIMENSIONS
-    #TODO FIX THIS AND ALL ARRAY SHAPES TO FOLLOW PYTHON LOADING
-    lam=np.transpose(lam)
+
     
     #brown
     #make wavelength grid
@@ -205,8 +214,8 @@ def mk_flatolap(lam, flat):
     #is preserved in transformation to constant wavelength bins.
 
     #verify data types https://www.harrisgeospatial.com/docs/PythonDataConvert.html
-    dLambx = np.zeros((nx,nGord),dtype=np.float64)
-    scale = np.zeros((nx,nGord),dtype=np.float64)
+    dLambx = np.zeros((nGord,nx),dtype=np.float64)
+    scale = np.zeros((nGord,nx),dtype=np.float64)
 
 
 
@@ -216,29 +225,24 @@ def mk_flatolap(lam, flat):
         #TODO first and last in each order are not accurate w idl code and precision is less
         #dlamb only accurate to 3 sigfig
         #scale is accurate against idl to about 3 decimal places
-        dLambx[:,y] = np.gradient(lam[:,y]) 
-        scale[:,y] =  dLambx[:,y]/dLambx[int(nx/2),y]
+        dLambx[y,:] = np.gradient(lam[y,:]) 
+        scale[y,:] =  dLambx[y,:]/dLambx[y,int(nx/2)]
 
 
     #brown 
     #isolate the desired orders, set contents to zero outside boundaries.
-    
+    gFlat = flat[0,gOrd,:]
+    sgFlat = np.zeros((nGord,nx),dtype=np.float64)
 
-    #TODO mnad;lsad;lsadksadjkl transpose hack blargggggggg
-    gFlat = np.transpose(flat[0,gOrd,:])
-    #gFlat = flat[0,gOrd,:]
-    sgFlat = np.zeros((nx,nGord),dtype=np.float64)
-    #print(np.shape(gFlat))
-    #print(np.shape(sgFlat))
 
     stuff = []
     for i in range(len(gOrd)) :
         #bug cant do bounds[i,0] for some reason
-        gFlat[0:bounds[i][0],i]=0
-        gFlat[bounds[i][1]:,i]=0
+        gFlat[i,0:bounds[i][0]]=0
+        gFlat[i,bounds[i][1]:]=0
         #BOX CAR SMOOTHING INSTEAD OF IDL SMOOTH()
         #https://joseph-long.com/writing/AstroPy-boxcar/
-        sgFlat[:,i]=convolve(convolve(convolve(gFlat[:,i]*scale[:,i], Box1DKernel(25)), Box1DKernel(25)), Box1DKernel(25))
+        sgFlat[i,:]=convolve(convolve(convolve(gFlat[i,:]*scale[i,:], Box1DKernel(25)), Box1DKernel(25)), Box1DKernel(25))
         #fig = plt.figure()
         #plot python data
         #plt.plot(gFlat[:,i]*scale[:,i], 'k-')
@@ -256,12 +260,12 @@ def mk_flatolap(lam, flat):
     #interpolate onto flatolap
 
     #https://stackoverflow.com/questions/18326714/idl-interpol-equivalent-for-python
-    from scipy import interpolate
+    
 
     #need extrapolate likely due to edge cases of lamda grid not being perfectly aligned. 
     #since linear spacing should be fine?
     for i in range(len(gOrd)) :
-        interpfunc = interpolate.interp1d(lam[:,gOrd[i]],sgFlat[:,i], kind='linear', fill_value='extrapolate')
+        interpfunc = interpolate.interp1d(lam[gOrd[i],:],sgFlat[i,:], kind='linear', fill_value='extrapolate')
         flatOlap = flatOlap+interpfunc(lamGrid)
 
     #brown
@@ -285,7 +289,7 @@ def mk_flatolap(lam, flat):
         
     #this returns to the pipeline that we have a bad flat    
     if max(flatOlap) > 1.5:
-        print("bad flat detected mk_flatolap.py")
+        #print("bad flat detected mk_flatolap.py")
         bad = True
         #return [],[]
         
@@ -389,12 +393,11 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun):
 
 
             #give multiple arrays of flats whose lam values are stored in multiple wave grid arrays
-            flatRet = mk_flatolap(obsRaw.waveGrid, flat)
+            flatRet = mk_flatolap(obsRaw, flat)
 
             #return one flat array with lambda grid
             flatOlap = flatRet[1]
             lamGrid = flatRet[0]
-
 
             #get the target data minus the flat
             targOlapf = calc_targOlapf(lamGrid, obsRaw.waveGrid, obsRaw.spec, flatOlap)
@@ -419,17 +422,25 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun):
             
             #time to toss bad spec so they won't be summed
             badSpec = False
-            badReason ='Bad'#TODO upgrade bad reason system
+            badReason =' Bad: '#TODO upgrade bad reason system
 
             #not included but may need to be, check if any values of targolapf
             #are negative. Makes sense to me that those spectra should be tossed
             badSpec = h.bad_spec_detection_v2(lamGrid-dLam,targOlapf)          
 
-            #among other things?!
-            if shk < 0 or shk > 1 or flatRet[2] == True:
-                badSpec = True         
             if badSpec:
+                badSpec = True
                 badD.append(obsRaw.mjd)
+                badReason+=(' bad spec detector.')
+            #among other things?!
+            if shk < 0 or shk > 1: 
+                badSpec = True  
+                badReason+=('shk above 1 or below 0. ')
+            elif flatRet[2] == True:
+                badSpec = True
+                badReason+=(' bad flat. ')
+
+            
 
 
             oData = h.analyzedData(obsRaw,lamGrid,flatOlap,targOlapf,shk,dLam,False,badSpec,windows)
@@ -446,7 +457,7 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun):
 
 
             if(badSpec):
-                print('bad: ' + str(obsRaw.mjd))
+                print(str(obsRaw.mjd)+badReason)
                 continue
 
             analyzed.append(oData)

@@ -48,8 +48,8 @@ from astropy import units as u
 import helpers as h
 
 
-#  extrct(nx,nord) = extracted but not flat-fielded spectra of target. (ADU)
-#  lam(nx,nord) = wavelength solution corresp to extrct. (nm)
+#  extrct(nord,nx) = extracted but not flat-fielded spectra of target. (ADU)
+#  lam(nord,nx) = wavelength solution corresp to extrct. (nm)
 def calc_targOlapf(lamGrid, lam, extrct, flatOlap):
 
     #number of good orders
@@ -60,15 +60,6 @@ def calc_targOlapf(lamGrid, lam, extrct, flatOlap):
     
     rdnoi=7.*np.sqrt(5.*5.)           # read noise per resolution element in e-
     resel=.0015                       #resolution element (nm)
-
-    
-
-    #print(extrct.shape)
-    #TODO FIX THIS AND ALL SO THAT IT FOLLOWS PYTHON DATA FORMAT INSTEAD OF IDL 
-    extrct = np.transpose(extrct)
-    #print(extrct.shape)
-    lam=np.transpose(lam)
-
 
 
     #brown
@@ -85,14 +76,14 @@ def calc_targOlapf(lamGrid, lam, extrct, flatOlap):
     from scipy import interpolate
     #https://stackoverflow.com/questions/18326714/idl-interpol-equivalent-for-python
     for i in range(len(gOrd)) :
-        lamC = lam[:,gOrd[i]]
+        lamC = lam[gOrd[i],:]
         dLamdx = np.gradient(lamC)
 
         scale = dLamdx/dLamdx[int(nx/2.)]
 
         #original T.Brown Code
         #flux=interpol(extrct(*,gord(i))*scale,lam(*,gord(i)),lamgrid)
-        interpfunc = interpolate.interp1d(lam[:,gOrd[i]],extrct[:,gOrd[i]]*scale, kind='linear', fill_value='extrapolate')
+        interpfunc = interpolate.interp1d(lam[gOrd[i],:],extrct[gOrd[i],:]*scale, kind='linear', fill_value='extrapolate')
         flux=interpfunc(lamGrid)
 
 
@@ -103,8 +94,8 @@ def calc_targOlapf(lamGrid, lam, extrct, flatOlap):
         #if(nsh gt 0) then flux(sh)=0.d0
         
         #ADAM CODE OF ABOVE - POTENTIALLY BUGGY
-        mini = np.min(lam[:,gOrd[i]])
-        maxi = np.max(lam[:,gOrd[i]])
+        mini = np.min(lam[gOrd[i],:])
+        maxi = np.max(lam[gOrd[i],:])
 
         sl=(lamGrid<=mini).nonzero()
         sh=(lamGrid>=maxi).nonzero()
@@ -197,12 +188,26 @@ def calc_shk(lamGrid, targOlapf, raw):
         print('Update temperature for HD ' + starName)
         tempEff = 6200
     
-    #this function gives us the regions of our arrays which hold the information we need to sum
-    windows = hk_windows(rv, lamGrid,h.cahLam,h.cakLam,h.lamB,h.lamR)[0]
 
-    fh=(targOlapf*windows[:,0]).sum()
-    fk=(targOlapf*windows[:,1]).sum()
-    fr=(targOlapf*windows[:,2]).sum()
+
+
+    if raw.nOrd == 67:
+        #this function gives us the regions of our arrays which hold the information we need to sum
+        windows = hk_windows(rv, lamGrid,h.cahLam,h.cakLam,h.lamB,h.lamR)[0]
+
+        fh=(targOlapf*windows[:,0]).sum()
+        fk=(targOlapf*windows[:,1]).sum()
+        fr=(targOlapf*windows[:,2]).sum()
+    elif raw.nOrd == 68:
+        #this function gives us the regions of our arrays which hold the information we need to sum
+        windows = smart_hk_windows(rv, lamGrid,h.cahLam,h.cakLam,h.lamB,h.lamR)[0]
+
+        fh=(targOlapf*windows[:,0]).sum()
+        fk=(targOlapf*windows[:,1]).sum()
+        fr=(targOlapf*windows[:,2]).sum()
+        fb=(targOlapf*windows[:,3]).sum()
+
+    
     
     
     #plt.figure()
@@ -221,10 +226,10 @@ def calc_shk(lamGrid, targOlapf, raw):
     #plt.show()
     #plt.close()
     
-    #the SHK calculation with pseudo V-Band
-    plFactor = blackbody_lambda(h.lamB*u.nm,tempEff*u.K).value/blackbody_lambda(h.lamR*u.nm,tempEff*u.K).value
-
-    fb = fr*plFactor
+    if raw.nOrd == 67:
+        #the SHK calculation with pseudo V-Band
+        plFactor = blackbody_lambda(h.lamB*u.nm,tempEff*u.K).value/blackbody_lambda(h.lamR*u.nm,tempEff*u.K).value
+        fb = fr*plFactor
 
     num = (fh+fk)*gain
     den = (fr+fb)*gain
