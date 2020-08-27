@@ -1,3 +1,23 @@
+#Helpers.py 
+# Adam Goga
+# Holds the two data structures built for spectra data(raw/analyzed) and other
+# helper functions. Most of the constants for the pipeline which deal with 
+# spectral analysis are defined here as well
+
+#File Functions
+#
+#def print_header
+#class rawData
+#class analyzedData
+#def mkdir_p
+#def bad_spec_detection_v2
+#def mjd_from_hdu
+#def find_nearest_mjd
+#def closestKey
+#def is_folder_star
+#def get_immediate_subdirectories
+#def find_closest
+
 import os
 import copy
 
@@ -17,7 +37,9 @@ from errno import EEXIST
 
 
 
-
+#ti=0
+#tf=0
+#timerOut=0
 
 alpha=43.             # factor to make shk into equivalent width (a guess!)
 

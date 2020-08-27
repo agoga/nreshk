@@ -193,10 +193,11 @@ def mk_flatolap(lam, flat):
     #TRANSPOSE THE STRAIGHT DATA BC IDL CODE HAS REVERSED DIMENSIONS
     #TODO FIX THIS AND ALL ARRAY SHAPES TO FOLLOW PYTHON LOADING
     lam=np.transpose(lam)
-
+    
     #brown
     #make wavelength grid
     nLam = ((lamRan[1]-lamRan[0])/dLam)+1
+
     lamGrid = lamRan[0]+dLam*np.arange(nLam,dtype=np.float64)
 
     #brown
@@ -225,6 +226,7 @@ def mk_flatolap(lam, flat):
 
     #TODO mnad;lsad;lsadksadjkl transpose hack blargggggggg
     gFlat = np.transpose(flat[0,gOrd,:])
+    #gFlat = flat[0,gOrd,:]
     sgFlat = np.zeros((nx,nGord),dtype=np.float64)
     #print(np.shape(gFlat))
     #print(np.shape(sgFlat))

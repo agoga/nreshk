@@ -1,3 +1,37 @@
+#Calc_shk.py 
+# Adam Goga
+# This file holds the functions which go from raw data and flat to 
+# Ca II H&K activity indes shk. These functions assume the spectra 
+# has been aligned already.
+
+#File Functions
+#
+#def calc_targOlapf
+#def hk_windows
+#def calc_shk
+#def smart_hk_windows
+#def smart_calc_shk
+
+#the original calc_shk function has been split into calc_targOlapf and calc_shk to better 
+#debug intermediate values 
+
+# This routine manages the computation of the Ca II H&K activity indes shk.
+# Inputs are:
+#  mjd = MJD-OBS for the input spectrum.
+#  siteid = site from which observation comes.
+#  teff = Estimated Teff of target star.
+#  extrct(nx,nord) = extracted but not flat-fielded spectra of target. (ADU)
+#  lam(nx,nord) = wavelength solution corresp to extrct. (nm)
+# Outputs are:
+#   shk = (fH + fK)/(fB + fR) where fH, fK are the counts in the cores of
+#       the H and K lines, resp., and fB, fR are fluxes in nearby blue and
+#       red continuum bands.  Note that shk requires some considerable work
+#       to be converted to the more physically useful index R'_HK.
+#   eshk = an estimate of the photon+read noise applicable to shk.
+
+
+
+
 import os
 import sys
 
@@ -13,38 +47,26 @@ from astropy import units as u
 
 import helpers as h
 
-# This routine manages the computation of the Ca II H&K activity indes shk.
-# Inputs are:
-#  mjd = MJD-OBS for the input spectrum.
-#  siteid = site from which observation comes.
-#  teff = Estimated Teff of target star.
+
 #  extrct(nx,nord) = extracted but not flat-fielded spectra of target. (ADU)
 #  lam(nx,nord) = wavelength solution corresp to extrct. (nm)
-# Outputs are:
-#   shk = (fH + fK)/(fB + fR) where fH, fK are the counts in the cores of
-#       the H and K lines, resp., and fB, fR are fluxes in nearby blue and
-#       red continuum bands.  Note that shk requires some considerable work
-#       to be converted to the more physically useful index R'_HK.
-#   eshk = an estimate of the photon+read noise applicable to shk.
-# For NRES, fB is not easily accessible, since the relevant echelle order is
-# not extracted.  Therefore, fB is approximated as FR*K(Teff), where the 
-# function K is the ratio of Planck functions in the red and blue bandpasses.
-#END TIM BROWN COMMENTS
-
-#the original calc_shk function has been split into calc_targOlapf and calc_shk to better 
-#debug intermediate values 
 def calc_targOlapf(lamGrid, lam, extrct, flatOlap):
+
+    #number of good orders
     gOrd=[63,64,65,66]
     ngord=len(gOrd)
 
     nx=ngord*1024#4096#TODO BAD ADAM
+    
     rdnoi=7.*np.sqrt(5.*5.)           # read noise per resolution element in e-
     resel=.0015                       #resolution element (nm)
 
     
 
+    #print(extrct.shape)
     #TODO FIX THIS AND ALL SO THAT IT FOLLOWS PYTHON DATA FORMAT INSTEAD OF IDL 
     extrct = np.transpose(extrct)
+    #print(extrct.shape)
     lam=np.transpose(lam)
 
 
@@ -154,6 +176,12 @@ def hk_windows(rvcc,lamGrid,cahLam,cakLam,lamB,lamR):
 #which is not currently used. I have left it in case we decide later to use it
 #over cross-correlation
 #rvcc is optional parameter if we want radial velocity shift
+
+#OLD COMMENT ABOUT NRES ORDERS
+# For NRES, fB is not easily accessible, since the relevant echelle order is
+# not extracted.  Therefore, fB is approximated as FR*K(Teff), where the 
+# function K is the ratio of Planck functions in the red and blue bandpasses.
+#END TIM BROWN COMMENTS
 def calc_shk(lamGrid, targOlapf, raw):
     starName=raw.star.strip('/')
     
