@@ -192,7 +192,7 @@ def mk_flatolap(raw, flat):
     nGord= len(gOrd)
     nx=raw.nx
 
-    print(nx)
+    print(highOrd)
     #bounds provides the cut off for each order, anthing below the low and above the high 
     #index of each order in the flat file will be ignored
     bounds=[[615,3803],[670,3770],[733,3740],[750,3660]]
@@ -323,7 +323,7 @@ def find_and_make_flat(obs):
 # plot final time series of star with all good data included
 #
 #loop through each star as desired
-def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun):
+def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun,only=None):
     starName = ''
 
     #resolution for printing
@@ -364,6 +364,10 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun):
             obsRaw = load_obs_for_pipeline(obsFileName)
             if obsRaw is None:
                 continue
+            
+            if only is not None:
+                if obsRaw.mjd not in only:
+                    continue
 
             #TODO investigate
             obsRaw.star=starName#sometimes the fits file will have a different star than the file name
@@ -401,7 +405,7 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun):
             lamGrid = flatRet[0]
 
             #get the target data minus the flat
-            targOlapf = calc_targOlapf(lamGrid, obsRaw.waveGrid, obsRaw.spec, flatOlap)
+            targOlapf = calc_targOlapf(obsRaw, lamGrid, flatOlap)
 
             #cross correlation returns a lambda offset(dlam) and save the lab spectra
             correlation = pipe.calc_del_lam(lab[0]/10,lab[1], lamGrid, targOlapf,res)

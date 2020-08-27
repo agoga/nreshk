@@ -50,13 +50,16 @@ import helpers as h
 
 #  extrct(nord,nx) = extracted but not flat-fielded spectra of target. (ADU)
 #  lam(nord,nx) = wavelength solution corresp to extrct. (nm)
-def calc_targOlapf(lamGrid, lam, extrct, flatOlap):
+def calc_targOlapf(raw,lamGrid, flatOlap):
 
     #number of good orders
-    gOrd=[63,64,65,66]
-    ngord=len(gOrd)
+    highOrd = raw.nOrd#virtually always we want to go to highest(lowest wavelength) order
 
-    nx=ngord*1024#4096#TODO BAD ADAM
+    gOrd = np.arange(h.lowGOrd,highOrd)
+
+    nx=raw.nx
+    lam=raw.waveGrid
+    extrct=raw.spec
     
     rdnoi=7.*np.sqrt(5.*5.)           # read noise per resolution element in e-
     resel=.0015                       #resolution element (nm)
