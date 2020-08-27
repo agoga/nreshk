@@ -1,3 +1,25 @@
+import os
+import os.path
+import re
+import scipy
+import scipy.signal
+from scipy import signal
+import scipy.ndimage.filters
+
+import numpy as np
+import matplotlib as mpl
+import scipy as sc
+import numpy.polynomial.polynomial as poly
+
+from matplotlib import pyplot as plt
+from astropy.convolution import convolve, Box1DKernel
+from scipy import interpolate
+from astropy.time import Time
+
+from calc_shk import calc_shk
+import plotting as plot
+import helpers as h
+
 #this file holds pipeline functions which are not telescope dependant
 
 #imports from a lot of data the lab frame spectra so we may cross-correlate onto this and
@@ -6,19 +28,7 @@
 #did more with this code than we need
 
 #TODO determine if this needs change for other uses 
-def import_aligning_spectra(fluxdir, minwl=None, maxwl=None, resolution=1, residual=False):
-    import numpy as np
-    import matplotlib as mpl
-    from matplotlib import pyplot as plt
-    import os
-    import os.path
-    import re
-    import scipy
-    import scipy.signal
-    import scipy.ndimage.filters
-    import helpers as h#for constants
-    
-    
+def import_aligning_spectra(fluxdir, minwl=None, maxwl=None, resolution=1, residual=False):   
     wavelength = []
     res_flux = []
     irradiance = []
@@ -72,19 +82,6 @@ def import_aligning_spectra(fluxdir, minwl=None, maxwl=None, resolution=1, resid
 #could certainly be improved on.
 #TODO not called if rvcc provided for star
 def calc_del_lam(labGrid, lab, tarGrid, targ, smooth) :
-    import scipy as sc
-    #import astropy.io.fits
-    import numpy as np
-    import helpers as h#for constants
-    import numpy.polynomial.polynomial as poly
-    #import os
-    #from calc_shk import calc_shk
-    #from calc_shk import calc_targOlapf
-    #from mk_flatolap import mk_flatolap
-    from matplotlib import pyplot as plt
-    from astropy.convolution import convolve, Box1DKernel
-    from scipy import interpolate
-    
     tmpGridScale = 1
     dLam = tarGrid[1] - tarGrid[0]
     #print(np.shape(targ))
@@ -132,7 +129,8 @@ def calc_del_lam(labGrid, lab, tarGrid, targ, smooth) :
     #THIS IS THE CROSS CORRELATION SECTION
     ##
     ##correlate must have same sized arrays input
-    correlation = np.correlate(targ[targ!=0]-rmsy,(labInterp[targ!=0]-rmsx),'full')
+    correlation = signal.fftconvolve(targ[targ!=0]-rmsy,(labInterp[targ!=0]-rmsx)[::-1],'full')
+    #correlation = np.correlate(targ[targ!=0]-rmsy,(labInterp[targ!=0]-rmsx),'full')
     #length of the correlation array is length input array times 2 plus 1
     #if the two arrays are already aligned then the peak of correlation function should be middle
     middle = int((len(correlation)-1)/2)
@@ -231,15 +229,7 @@ def calc_del_lam(labGrid, lab, tarGrid, targ, smooth) :
 #This is how the data structure is created and maintained:
 #E
 #correlation[0] is the delta lamda to place spectra in lab frame and lamGrid is the lab frame
-def sum_daily_data(inData,starName,labSpec):
-    from scipy import interpolate
-    import numpy as np
-    from calc_shk import calc_shk
-    from astropy.time import Time
-    import plotting as plot
-    import helpers as h
-    import numpy as np
-    
+def sum_daily_data(inData,starName,labSpec):  
     rv = 0
     done = []#array to hold which MJD are done
 

@@ -1,13 +1,18 @@
+import astropy.io.fits 
+
+import numpy as np
+import scipy as sc
+import matplotlib.patches as mpatches
+import matplotlib.gridspec as gridspec
+from matplotlib import pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
+from astropy.time import Time
+
+import helpers as h#for constants
+
+
 #this function plots the final time series of SHK values for each star
 def plot_timeseries(inData,bad, fig = None, ax = None):
-    import numpy as np
-    import matplotlib.patches as mpatches
-    from matplotlib import pyplot as plt
-    from astropy.time import Time
-    import astropy.io.fits 
-    import helpers as h
-
-
     mjdArray=[o.mjd for o in inData]
     shkValArray=[o.shk for o in inData]
 
@@ -82,17 +87,6 @@ def plot_timeseries(inData,bad, fig = None, ax = None):
 #pipeline.
 #def pdf_from_intermediate_data(bGrid, base, oGrid, obs, windows, title, path, flat='', width=1):
 def pdf_from_intermediate_data(bGrid, base, oData, width=1):
-    import numpy as np
-    from matplotlib import pyplot as plt
-    from matplotlib.backends.backend_pdf import PdfPages
-    import matplotlib.gridspec as gridspec
-    import scipy as sc
-    import helpers as h#for constants
-
-    
-
-
-
     title = oData.pdfTitle()
     windows = oData.window
     oGrid = oData.lamGrid - oData.offset #Shift the grid by the offset if any

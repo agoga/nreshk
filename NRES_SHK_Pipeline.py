@@ -1,30 +1,27 @@
 #NRES SHK Specific pipeline. 
 # Order of pipeline and folder structure taylored for nres_shk
 import sys
-import scipy.constants as sc
-import astropy.io.fits
-import numpy as np
 import os
 import glob
-import helpers as h
 import logging
+import pickle
+import pprint
+import astropy.io.fits
+import time
 
+import scipy.constants as sc
+import numpy as np
+from astropy.time import Time
+from matplotlib.backends.backend_pdf import PdfPages
+from matplotlib import pyplot as plt
+from astropy.convolution import convolve, Box1DKernel
+
+import helpers as h
+import pipeline as pipe
+import plotting as plot
 from calc_shk import calc_targOlapf
 from calc_shk import calc_shk
 from calc_shk import smart_calc_shk
-import pickle
-import pprint
-import pickle
-import pprint
-import os
-import astropy.io.fits
-
-import pipeline as pipe
-import plotting as plot
-
-from matplotlib import pyplot as plt
-
-from astropy.time import Time
 #This is the flat field dictionary creator.
 #it must be run before the pipeline is run since we need the flatDict var
 #do not run create_flat_dict_file unless you have added a new flat field to the flats folder
@@ -79,8 +76,7 @@ def create_flat_dict_file(flatDir,fileName):
 def old_multifile_NRES_to_data(obsFileName):
     #print('old format')
     #load the data in the old format
-    import os
-    import astropy.io.fits
+    
     data=None
     splt = os.path.splitext(obsFileName)
     noFlat = splt[0]+'-noflat'+splt[1]
@@ -128,10 +124,7 @@ def old_multifile_NRES_to_data(obsFileName):
 #and loads, from fits files, the wavelength grid, spectra, header information
 #This function is only needed when there is both old and new data from NRES and we don't know which
 #is which. When all the data is in the new format then half this function can be removed.
-def load_obs_for_pipeline(obsFileName):
-    import os
-    import astropy.io.fits
-    
+def load_obs_for_pipeline(obsFileName):    
     waveGrid = []
     spec = []
     header = []
@@ -153,11 +146,14 @@ def load_obs_for_pipeline(obsFileName):
     if oldFormat:
         return old_multifile_NRES_to_data(obsFileName)
     else: #ELSE IT'S NEW FORMAT and super easy
+        
         oHDu = astropy.io.fits.open(obsFileName)
         waveGrid = oHDu[7].data
         spec = oHDu[1].data
         header = oHDu[0].header
         star = header['OBJ1']
+        nOrd = header['NORD']
+        nx = header['NX']
         data = h.rawData(star,waveGrid,spec,header,obsFileName,oldFormat)  
         oHDu.close()
    #end big if              
@@ -180,15 +176,6 @@ def mk_flatolap(lam, flat):
     #WORKING MK_FLATOLAP
     ##PORT OF DR. TIM BROWN'S NRES HK CODE 
     ##comments marked brown are Dr. Brown's
-    
-    import numpy as np
-    import scipy.io as sc
-    import sys
-    from matplotlib.backends.backend_pdf import PdfPages
-
-    from matplotlib import pyplot as plt
-
-    from astropy.convolution import convolve, Box1DKernel
 
 
     gOrd = np.arange(h.lowGOrd,h.highGOrd+1)
@@ -335,9 +322,7 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun):
     #resolution for printing
     res = .01
     #label =''
-
     stars = h.get_immediate_subdirectories(dataPath)
-
     starData = {}#dictionary for returning from this function
     
     #loop through every folder in the data files path. 
@@ -366,11 +351,9 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun):
         obsUn = glob.glob(starPath+'\\**\\*-e91.fits', recursive=True)
         obsFiles = [r for r in obsUn if not "output" in r]
         print('Number of observations: ' + str(len(obsFiles)))
-
         #star loop
         for obsFileName in obsFiles:
             print('-------------------------------------------------------------------------------')
-
             obsRaw = load_obs_for_pipeline(obsFileName)
             if obsRaw is None:
                 continue
@@ -385,6 +368,7 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun):
 
             #try to find a flat otherwise fail
             #try:
+
             fD = flatDict[obsRaw.site]
             fK = h.closestKey(fD,float(obsRaw.mjd))
 
@@ -392,13 +376,15 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun):
 
             ##8/21/2020 was fHDu = astropy.io.fits.open(os.path.join(path,flatFilePath))
             fHDu = astropy.io.fits.open(os.path.join(starPath,flatFilePath))
+            flat = fHDu[0].data
+            fHDu.close()
 
-            flat = fHDu[0].data#key for pipeline
 
             #if abs(mjd-fK) > 25:
             #    print('BAD BAD closest for: '+str(mjd) +' is '+ str(abs(mjd-fK)))
             #elif abs(mjd-fK) > 2:
             #    print('closest for: '+str(mjd) +' is '+ str(abs(mjd-fK)))
+
 
             #give multiple arrays of flats whose lam values are stored in multiple wave grid arrays
             flatRet = mk_flatolap(obsRaw.waveGrid, flat)
@@ -407,11 +393,13 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun):
             flatOlap = flatRet[1]
             lamGrid = flatRet[0]
 
+
             #get the target data minus the flat
             targOlapf = calc_targOlapf(lamGrid, obsRaw.waveGrid, obsRaw.spec, flatOlap)
 
             #cross correlation returns a lambda offset(dlam) and save the lab spectra
             correlation = pipe.calc_del_lam(lab[0]/10,lab[1], lamGrid, targOlapf,res)
+
             dLam = correlation[0]
             labSpec = correlation[2]
 
@@ -421,12 +409,11 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun):
             #delta lamda / ref lamda * speed of light
             # rv = dLam/ lamRef * sc.c 
             #rv from meters to km/s as desired by hk_windows
-
             #find SHK with new offset to lamda grid
             shkRet = calc_shk(lamGrid-dLam, targOlapf, obsRaw)
             shk = shkRet[0]
             windows = shkRet[1]
-            
+
             
             #time to toss bad spec so they won't be summed
             badSpec = False
@@ -435,7 +422,7 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun):
             #not included but may need to be, check if any values of targolapf
             #are negative. Makes sense to me that those spectra should be tossed
             badSpec = h.bad_spec_detection_v2(lamGrid-dLam,targOlapf)          
-            
+
             #among other things?!
             if shk < 0 or shk > 1 or flatRet[2] == True:
                 badSpec = True         
@@ -461,14 +448,12 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun):
                 continue
 
             analyzed.append(oData)
-            
         #end of star loop 
         
         #major portions of the pipeline are kept in these two functions for readability.
         #We could likely functionize from individual observation folder-> data output as well
         #but if people are interested in putting data through this pipeline from other telescopes
         #many parts of the above code must be changed. The below would not need to be changed.
-
         analyzed = pipe.sum_daily_data(analyzed,starName,labSpec)
 
         #save all the stars data to file for reloading 
@@ -484,7 +469,6 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun):
         pickle.dump(analyzed,f)
         f.close()
 
-
         plot.plot_timeseries(analyzed,badD)
 
         #we're going to loop through all folders in a stars data and determine if each is 
@@ -496,7 +480,6 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun):
             #print(subdirs)
         
         starData.update({starName: analyzed})
-
 
 
     return analyzed#pass back analyzed data           

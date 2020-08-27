@@ -8,6 +8,8 @@ once folder order set, place functions on top for easy finding
 
 cofirm that we should always use filename for star over the star name from fits header
 
+Convolutions take the most time(outside of plotting)
+
 FIXED-Easy to use plot function to take this pipeline data and print it with other data
 
 Try catch around single observations as well as stars to allow for large data sets to be processed despite potential errors.

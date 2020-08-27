@@ -1,3 +1,18 @@
+import os
+import sys
+
+import numpy as np
+import scipy.io as sc
+import astropy.io.fits
+
+from matplotlib import pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
+from astropy.convolution import convolve, Box1DKernel
+from astropy.modeling.blackbody import blackbody_lambda
+from astropy import units as u
+
+import helpers as h
+
 # This routine manages the computation of the Ca II H&K activity indes shk.
 # Inputs are:
 #  mjd = MJD-OBS for the input spectrum.
@@ -19,21 +34,10 @@
 #the original calc_shk function has been split into calc_targOlapf and calc_shk to better 
 #debug intermediate values 
 def calc_targOlapf(lamGrid, lam, extrct, flatOlap):
-    ##intializations and hardcoded inputs
-    import numpy as np
-    import scipy.io as sc
-    import sys
-    import astropy.io.fits
-    import os
-    from matplotlib import pyplot as plt
-    from astropy.convolution import convolve, Box1DKernel
-    from matplotlib.backends.backend_pdf import PdfPages
-    
-
     gOrd=[63,64,65,66]
     ngord=len(gOrd)
 
-    nx=4096#TODO BAD ADAM
+    nx=ngord*1024#4096#TODO BAD ADAM
     rdnoi=7.*np.sqrt(5.*5.)           # read noise per resolution element in e-
     resel=.0015                       #resolution element (nm)
 
@@ -119,8 +123,6 @@ def calc_targOlapf(lamGrid, lam, extrct, flatOlap):
 #todo move this function to calcshk or copy comments
 # rvcc = redshift of target star relative to lab. (km/s)
 def hk_windows(rvcc,lamGrid,cahLam,cakLam,lamB,lamR):
-    import numpy as np
-    import helpers as h
     #brown
     #make output array
     nLam = len(lamGrid)
@@ -153,12 +155,6 @@ def hk_windows(rvcc,lamGrid,cahLam,cakLam,lamB,lamR):
 #over cross-correlation
 #rvcc is optional parameter if we want radial velocity shift
 def calc_shk(lamGrid, targOlapf, raw):
-    import helpers as h#for constants
-    
-    from astropy.modeling.blackbody import blackbody_lambda
-    from astropy import units as u
-    from matplotlib import pyplot as plt
-    
     starName=raw.star.strip('/')
     
     
@@ -212,10 +208,6 @@ def calc_shk(lamGrid, targOlapf, raw):
 
 #smarts specific hk windows with V-Band included
 def smart_hk_windows(rvcc,lamGrid,cahLam,cakLam,lamB,lamR):
-    import numpy as np
-    import helpers as h
-    
-
     #make output array
     nLam = len(lamGrid)
     windows = np.zeros((nLam,4),dtype=np.float32)

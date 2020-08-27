@@ -1,13 +1,22 @@
+import os
+import copy
 
 import numpy as np
 import scipy as sc
-import os
-from matplotlib import pyplot as plt
-from astropy.io import fits
+
 import astropy.io.fits
 import astropy.io.fits.header
+
+from scipy import signal
+from os import makedirs,path
+from matplotlib import pyplot as plt
+from astropy.io import fits
 from astropy.time import Time
-import copy
+from errno import EEXIST
+
+
+
+
 
 
 alpha=43.             # factor to make shk into equivalent width (a guess!)
@@ -88,7 +97,8 @@ class rawData:
     site:str#header['SITEID']
     date:str#header['DATE-OBS']
     star:str
-
+    nx:int
+    nOrd:int
 
     #def __init__(self, target=None):
     ##    if orig is None:
@@ -96,7 +106,7 @@ class rawData:
       #  else:
       #      self._copy_constructor(target)
 
-    def __init__(self=None,star=None,waveGrid=None,spec=None,header=None,fileName=None,format=None,copy=None):
+    def __init__(self=None,star=None,waveGrid=None,spec=None,header=None,fileName=None,format=None,nOrd=None,nx=None,copy=None):
         self.mjd = None
         if copy is None:
             self.header = header
@@ -109,6 +119,8 @@ class rawData:
             self.fitsFile=fileName
             self.format=format 
             self.waveGrid = waveGrid
+            self.nOrd = nOrd
+            self.nx=nx
         else:
             self.header = copy.header
             self.star = copy.star
@@ -119,6 +131,8 @@ class rawData:
             self.fitsFile=copy.fitsFile
             self.format=copy.format 
             self.waveGrid = copy.waveGrid
+            self.nOrd = copy.nOrd
+            self.nx = copy.nx
 
     
 
@@ -209,9 +223,6 @@ class analyzedData(rawData):
 #https://stackoverflow.com/questions/11373610/save-matplotlib-file-to-a-directory
 def mkdir_p(mypath):
     '''Creates a directory. equivalent to using mkdir -p on the command line'''
-
-    from errno import EEXIST
-    from os import makedirs,path
     try:
         makedirs(mypath)
     except OSError as exc: # Python >2.5
@@ -227,9 +238,14 @@ def mkdir_p(mypath):
 #offset will the noise overlap.
 def bad_spec_detection_v2(lamGrid, targ):
     
-    correlation = np.correlate(targ,targ,'full')
+
+
+    correlation = signal.fftconvolve(targ,targ[::-1],'full')
+    #correlation = np.correlate(targ,targ,'full')
     
     #TODO maybe take the maximum out of the mean for a different ratio.
+
+    
     mean = np.mean(correlation[39900:40100])
     maxi = max(correlation[39900:40100])
     #print("bad correlation: " + str(maxi/mean)) 
