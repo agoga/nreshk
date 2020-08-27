@@ -41,8 +41,7 @@ from errno import EEXIST
 #tf=0
 #timerOut=0
 
-
-                43.             # factor to make shk into equivalent width (a guess!)
+      
 
 c=2.99792458e5  #speed of light (km/s)
 
@@ -69,10 +68,12 @@ siteColors = {  'lsc':["b","Cerro Tololo Interamerican Obs\'"],
                 'elp':["r","McDonald Obs\'"],
                 'tlv':["k","Wise Obs\'"]}
 
-siteAlpha {     'lsc':43,#The alpha value in the Ca HK SHK calculation is telescope dependent
-                'cpt':43,
-                'elp':43,
-                'tlv':43}
+
+# factor to make shk into equivalent width (a guess!)
+siteAlpha ={     'lsc':31,#The alpha value in the Ca HK SHK calculation is telescope dependent
+                'cpt':31,
+                'elp':31,
+                'tlv':31}
 
 tEffLookup = {"1835":5837,
               "12235":6097,

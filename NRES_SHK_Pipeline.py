@@ -192,6 +192,7 @@ def mk_flatolap(raw, flat):
     nGord= len(gOrd)
     nx=raw.nx
 
+    print(nx)
     #bounds provides the cut off for each order, anthing below the low and above the high 
     #index of each order in the flat file will be ignored
     bounds=[[615,3803],[670,3770],[733,3740],[750,3660]]

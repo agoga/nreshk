@@ -139,26 +139,38 @@ def hk_windows(rvcc,lamGrid,cahLam,cakLam,lamB,lamR):
     #brown
     #make output array
     nLam = len(lamGrid)
-    windows = np.zeros((nLam,3),dtype=np.float32)
+    windows = np.zeros((nLam,4),dtype=np.float32)
     z = 1. +rvcc/h.c
     
-    #brown
-    #make window functions
+    
+    #emmission features
+    #creates a triangle filter around CA H and K
+    # H 
     d0 = abs(lamGrid-h.cahLam*z)/h.lineWid
     s = (d0<=1.0).nonzero()
     if len(s) > 0:
+        #print('g')
+        #print(1.-d0[s])
         windows[s,0]=1.-d0[s] 
-    
+    # K
     d1 = abs(lamGrid-h.cakLam*z)/h.lineWid
     s = (d1<=1.0).nonzero()
     if len(s) > 0:
         windows[s,1]=1.-d1[s] 
     
+    #continum bands
+    #no filter applied to continum bands
+    #r-band
     d2 = abs(lamGrid-h.lamR*z)*2./h.conWid
     s = (d2<=1.0).nonzero()
     if len(s) > 0:
         windows[s,2]=1.
-
+    #v-band
+    d3 = abs(lamGrid-h.lamB*z)*2./h.conWid
+    s = (d3<=1.0).nonzero()
+    if len(s) > 0:
+        windows[s,3]=1.
+        
     return windows, lamB, lamR
 
 #This is the actual function to calculate the SHK
@@ -233,7 +245,8 @@ def calc_shk(lamGrid, targOlapf, raw):
 
     num = (fh+fk)*gain
     den = (fr+fb)*gain
-    shk = h.alpha*(fh+fk)/(fr+fb)
+    alpha = h.siteAlpha[raw.site]
+    shk = alpha*(fh+fk)/(fr+fb)
     #print("shk: "+ str(shk))
 
     return shk, windows, fr/fb
@@ -264,9 +277,9 @@ def smart_hk_windows(rvcc,lamGrid,cahLam,cakLam,lamB,lamR):
     
     #continum bands
     #no filter applied to continum bands
+    #r-band
     d2 = abs(lamGrid-h.lamR*z)*2./h.conWid
     s = (d2<=1.0).nonzero()
-    #r-band
     if len(s) > 0:
         windows[s,2]=1.
     #v-band

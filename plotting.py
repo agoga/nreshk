@@ -75,7 +75,7 @@ def plot_timeseries(inData,bad, fig = None, ax = None):
     ax.ticklabel_format(useOffset=False)
     plt.title('HD '+starName+' magnetic activity time series')
     plt.xlabel('Time(years)')
-    plt.ylabel('Adjusted S-index with α:'+str(h.alpha))
+    plt.ylabel('Adjusted S-index')
     plt.savefig(outputDir+starName+'_shk_time_series.pdf',bbox_inches='tight')
     plt.show()
     plt.close()
@@ -111,7 +111,8 @@ def pdf_from_intermediate_data(bGrid, base, oData, width=1):
     
 
     lamR=h.lamR
-    
+    lamB=h.lamB
+
     #if flat was passed as empty, fill it with nans
     if len(flat) == 0:
         flat = np.full(len(bGrid),0)
@@ -141,7 +142,7 @@ def pdf_from_intermediate_data(bGrid, base, oData, width=1):
     plt.suptitle(title)
     plt.ticklabel_format(useOffset=False)
     with PdfPages(reportPath) as curPdf:
-        gs = gridspec.GridSpec(4, 3)
+        gs = gridspec.GridSpec(4, 4)
         
         #references to each plot
         targPlt = plt.subplot(gs[2,:])
@@ -150,11 +151,13 @@ def pdf_from_intermediate_data(bGrid, base, oData, width=1):
         kPlt = plt.subplot(gs[0,0])
         hPlt = plt.subplot(gs[0,1])
         rPlt =plt.subplot(gs[0,2])
+        bPlt =plt.subplot(gs[0,3])
         
         #please matplotlib don't make my stuff hard to read!
         hPlt.ticklabel_format(useOffset=False)
         kPlt.ticklabel_format(useOffset=False)
         rPlt.ticklabel_format(useOffset=False)
+        bPlt.ticklabel_format(useOffset=False)
         targPlt.ticklabel_format(useOffset=False)
         flatPlt.ticklabel_format(useOffset=False)
         smoothedPlt.ticklabel_format(useOffset=False)
@@ -162,6 +165,7 @@ def pdf_from_intermediate_data(bGrid, base, oData, width=1):
         hPlt.tick_params(axis='both',which= 'major', labelsize=7)
         kPlt.tick_params(axis='both',which= 'major', labelsize=7)
         rPlt.tick_params(axis='both',which= 'major', labelsize=7)
+        bPlt.tick_params(axis='both',which= 'major', labelsize=7)
         targPlt.tick_params(axis='both',which= 'major', labelsize=7)
         flatPlt.tick_params(axis='both',which= 'major', labelsize=7)
         smoothedPlt.tick_params(axis='both',which= 'major', labelsize=7)
@@ -173,6 +177,7 @@ def pdf_from_intermediate_data(bGrid, base, oData, width=1):
         hPlt.set_title("Ca-H window")
         kPlt.set_title("Ca-K window")
         rPlt.set_title("Red band window")
+        bPlt.set_title("Blue band window")
         
         targPlt.set_title("Target overlap shifted over reference spectra")
         targPlt.set_xlabel("Wavelength(nm)")
@@ -191,6 +196,7 @@ def pdf_from_intermediate_data(bGrid, base, oData, width=1):
         cur=windows[:,0]
         hkWidth=h.lineWid + .005
         rWidth =h.conWid/2 +.05
+        bWidth =h.conWid/2 +.05
         
         hPlt.axvline(x=calH,color=hColor)
         hPlt.plot(oGrid[cur!=0],obs[cur!=0],'b-')
@@ -205,11 +211,17 @@ def pdf_from_intermediate_data(bGrid, base, oData, width=1):
         rPlt.plot(oGrid[cur!=0],obs[cur!=0])
         rPlt.set_xlim(lamR-rWidth, lamR+rWidth)
         
-        
-        #Targolapf plot 
         #get red lines from windows funct too
         rMin = oGrid[cur!=0][0]
         rMax = oGrid[cur!=0][-1]
+
+        cur=windows[:,3]
+        bPlt.plot(oGrid[cur!=0],obs[cur!=0])
+        bPlt.set_xlim(lamB-bWidth, lamB+bWidth)
+        #get blue lines
+        bMin = oGrid[cur!=0][0]
+        bMax = oGrid[cur!=0][-1]
+
        #print('rmin: ' + str(rMin) + ' rMax: ' + str(rMax))
         #terrrrible way to get scale fixxxxxxx
         scale = obs[cur!=0]/base[cur!=0]
@@ -219,7 +231,9 @@ def pdf_from_intermediate_data(bGrid, base, oData, width=1):
         targPlt.axvline(x=calK,color=kColor)
         targPlt.axvline(x=rMin, color='red')
         targPlt.axvline(x=rMax, color='red')
-        
+        targPlt.axvline(x=bMin, color='purple')
+        targPlt.axvline(x=bMax, color='purple')
+
         #if there is a flat to plot then only use the target data when it is greater than .4
         #If we dont do this then on the edges out graph will be divided by a very small number which
         #makes it hard to see the data in the middle that we care about
@@ -245,9 +259,12 @@ def pdf_from_intermediate_data(bGrid, base, oData, width=1):
         
         smoothedPlt.axvline(x=calH,color=hColor)
         smoothedPlt.axvline(x=calK,color=kColor)
+        
         smoothedPlt.axvline(x=rMin, color='red')
         smoothedPlt.axvline(x=rMax, color='red')
-        
+
+        smoothedPlt.axvline(x=bMin, color='purple')
+        smoothedPlt.axvline(x=bMax, color='purple')
         
         #if there is a flat to plot then only use the target data when it is greater than .4
         #If we dont do this then on the edges out graph will be divided by a very small number which
