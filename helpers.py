@@ -50,12 +50,12 @@ cakLam=393.366#393.485 #    #Ca II K line wavelength (nm, vacuum)
 
 
 #center of blue continuum band (nm, vacuum)
-lamB=390.2176-.116 +.5#subtraction is the offset from our lab values     
+lamB=390.2176-.116# +.5#subtraction is the offset from our lab values     
 #center of red continuum band (nm, vacuum)
 #TODO TAKE FROM VAUGHAN 1978 subtraction is the offset from our lab values 
-lamR=400.2204-.116-.5#subtraction is the offset from our lab values  
+lamR=400.2204-.116#-.5#subtraction is the offset from our lab values  
 
-conWid=1.5#2.0         #wavelength width of continuum bands (nm, vacuum)
+conWid=2.0#1.5#2.0         #wavelength width of continuum bands (nm, vacuum)
 lineWid=.109       #FWHM of line core window functions (nm, vacuum)
     
 sigToFWHM = 2.355#used to display a real FWHM value on plots where smoothing occurs
@@ -70,10 +70,10 @@ siteColors = {  'lsc':["b","Cerro Tololo Interamerican Obs\'"],
 
 
 # factor to make shk into equivalent width (a guess!)
-siteAlpha ={     'lsc':31,#The alpha value in the Ca HK SHK calculation is telescope dependent
-                'cpt':31,
-                'elp':31,
-                'tlv':31}
+siteAlpha ={     'lsc':43,#The alpha value in the Ca HK SHK calculation is telescope dependent
+                'cpt':43,
+                'elp':43,
+                'tlv':43}
 
 tEffLookup = {"1835":5837,
               "12235":6097,

@@ -294,7 +294,7 @@ def find_and_make_flat(obs):
 # plot final time series of star with all good data included
 #
 #loop through each star as desired
-def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun,only=None):
+def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,only=None):
     starName = ''
 
     #resolution for printing
@@ -307,8 +307,9 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun,only=None):
     #these folders hold all the data for each star
     for s in stars:
         #need blank arrays to append to since we don't know length due to bad spectra
-        obsFiles = []
-        analyzed =[]
+        obsFiles=[]
+        analyzed=[]
+        badD=[]
 
         if not h.is_folder_star(s):
             print('bad folder \'' + s + '\'')
@@ -331,7 +332,7 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun,only=None):
         print('Number of observations: ' + str(len(obsFiles)))
         #star loop
         for obsFileName in obsFiles:
-            print('-------------------------------------------------------------------------------')
+            
             obsRaw = load_obs_for_pipeline(obsFileName)
             if obsRaw is None:
                 continue
@@ -339,7 +340,11 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun,only=None):
             if only is not None:
                 if obsRaw.mjd not in only:
                     continue
-
+            
+            if obsRaw.mjd in skip:
+                continue
+            
+            print('-------------------------------------------------------------------------------')
             obsRaw.star=starName#sometimes the fits file will have a different star than the file name
 
             #if you have data from a different system you may just want to simulate the header
@@ -468,8 +473,7 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,badD,forceRun,only=None):
             #print(subdirs)
         
         starData.update({starName: analyzed})
-
-
+    print(badD)
     return analyzed#pass back analyzed data           
 
                 
