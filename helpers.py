@@ -70,10 +70,10 @@ siteColors = {  'lsc':["b","Cerro Tololo Interamerican Obs\'"],
 
 
 # factor to make shk into equivalent width (a guess!)
-siteAlpha ={     'lsc':43,#The alpha value in the Ca HK SHK calculation is telescope dependent
-                'cpt':43,
-                'elp':43,
-                'tlv':43}
+siteAlpha ={     'lsc':44,#The alpha value in the Ca HK SHK calculation is telescope dependent
+                'cpt':37,
+                'elp':39,
+                'tlv':39}
 
 tEffLookup = {"1835":5837,
               "12235":6097,
@@ -292,7 +292,7 @@ def bad_spec_detection_v2(lamGrid, targ):
     
     #TODO for future projects, fiddling with this number will remove or allow different spectra
     #1.7 might be a better go
-    if maxi/mean > 2:
+    if maxi/mean > 1.7:
         return True
     else:
         return False

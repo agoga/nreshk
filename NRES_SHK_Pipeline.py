@@ -354,6 +354,8 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,only=None):
 
             #try to find a flat otherwise fail
             #try:
+            if obsRaw.nOrd is 68:
+                continue#REMOVE THIS WHEN YOU WANNA DO NEW SPEC
 
             fD = flatDict[obsRaw.site]
             fK = h.closestKey(fD,float(obsRaw.mjd))
