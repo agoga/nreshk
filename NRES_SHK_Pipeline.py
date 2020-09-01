@@ -112,10 +112,7 @@ def old_multifile_NRES_to_data(obsFileName):
         #print(wvHDu[0].data.dtype)
         waveGrid = (wvHDu[0].data)[0]
 
-    star = header['OBJ1']
-    nOrd = header['NORD']
-    nx = header['NX']
-    data = h.rawData(star,waveGrid,spec,header,obsFileName,True,nOrd,nx)  
+    data = h.rawData(waveGrid,spec,header,obsFileName,True)  
     
     specHDu.close()
     wvHDu.close()
@@ -152,10 +149,7 @@ def load_obs_for_pipeline(obsFileName):
         waveGrid = oHDu[7].data
         spec = oHDu[1].data
         header = oHDu[0].header
-        star = header['OBJ1']
-        nOrd = header['NORD']
-        nx = header['NX']
-        data = h.rawData(star,waveGrid,spec,header,obsFileName,oldFormat,nOrd,nx)  
+        data = h.rawData(waveGrid,spec,header,obsFileName,oldFormat)  
         oHDu.close()
    #end big if              
     #if len(waveGrid) == 0 or len(spec) == 0 or len(header) == 0:

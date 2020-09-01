@@ -128,6 +128,7 @@ class rawData:
     star:str
     nx:int
     nOrd:int
+    alpha:float
 
     #def __init__(self, target=None):
     ##    if orig is None:
@@ -135,21 +136,24 @@ class rawData:
       #  else:
       #      self._copy_constructor(target)
 
-    def __init__(self=None,star=None,waveGrid=None,spec=None,header=None,fileName=None,format=None,nOrd=None,nx=None,copy=None):
+    def __init__(self=None,waveGrid=None,spec=None,header=None,fileName=None,format=None,copy=None):
         self.mjd = None
+        
         if copy is None:
             self.header = header
-            self.star = star
+            #TODO check the header as you go and throw error if missing any
             self.mjd = header['MJD-OBS']
             self.site = header['SITEID']
+            self.alpha = siteAlpha[self.site]
             self.date = header['DATE-OBS']
+            self.star = header['OBJ1']
+            self.nOrd = header['NORD']
+            self.nx = header['NX']
             self.spec=spec
             self.header=header
             self.fitsFile=fileName
             self.format=format 
-            self.waveGrid = waveGrid
-            self.nOrd = nOrd
-            self.nx=nx
+            self.waveGrid = waveGrid   
         else:
             self.header = copy.header
             self.star = copy.star
@@ -162,6 +166,7 @@ class rawData:
             self.waveGrid = copy.waveGrid
             self.nOrd = copy.nOrd
             self.nx = copy.nx
+            self.alpha = copy.alpha
 
     
 

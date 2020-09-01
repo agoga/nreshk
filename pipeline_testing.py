@@ -47,3 +47,13 @@ def test_daily_data_sum():
     r = make_random_data(10)
 
     pipe.sum_daily_data(r,'',[])
+
+
+#divide out by the original alpha then multiply by new
+def adjust_sites_alpha(data,alpha_dict):
+    for d in data:
+        unShk = d.shk/d.alpha
+        d.alpha = alpha_dict[d.site]
+        d.shk = unShk*d.alpha
+    return data
+
