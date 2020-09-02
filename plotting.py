@@ -210,6 +210,14 @@ def pdf_from_intermediate_data(bGrid, base, oData, width=1, multiCorr=None):
         kPlt.plot(oGrid[cur!=0],obs[cur!=0],'b-')
         kPlt.set_xlim(calK-hkWidth,calK+hkWidth)
 
+
+        cur=windows[:,3]
+        bPlt.plot(oGrid[cur!=0],obs[cur!=0])
+        bPlt.set_xlim(lamB-bWidth, lamB+bWidth)
+        #get blue lines
+        bMin = oGrid[cur!=0][0]
+        bMax = oGrid[cur!=0][-1]
+        
         cur=windows[:,2]
         rPlt.plot(oGrid[cur!=0],obs[cur!=0])
         rPlt.set_xlim(lamR-rWidth, lamR+rWidth)
@@ -218,12 +226,6 @@ def pdf_from_intermediate_data(bGrid, base, oData, width=1, multiCorr=None):
         rMin = oGrid[cur!=0][0]
         rMax = oGrid[cur!=0][-1]
 
-        cur=windows[:,3]
-        bPlt.plot(oGrid[cur!=0],obs[cur!=0])
-        bPlt.set_xlim(lamB-bWidth, lamB+bWidth)
-        #get blue lines
-        bMin = oGrid[cur!=0][0]
-        bMax = oGrid[cur!=0][-1]
 
        #print('rmin: ' + str(rMin) + ' rMax: ' + str(rMax))
         #terrrrible way to get scale fixxxxxxx
