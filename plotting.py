@@ -58,6 +58,9 @@ def plot_timeseries(inData,bad, fig = None, ax = None):
             size = averageIconSize
             opac = averageOpacity
         ax.scatter(d.decimalYr.value,d.shk,marker=mark,edgecolors='k', c=col, s=size, alpha=opac)
+
+        if hasattr(d,'format') and d.format == True:
+            ax.scatter(d.decimalYr.value,d.shk,marker='x',edgecolors='k', c='r', s=size*2/3, alpha=opac)
     
     sites =[]
     for key in h.siteColors:
@@ -86,7 +89,7 @@ def plot_timeseries(inData,bad, fig = None, ax = None):
 ##This is the massive printing function to create a report of each observation pushed through the
 #pipeline.
 #def pdf_from_intermediate_data(bGrid, base, oGrid, obs, windows, title, path, flat='', width=1):
-def pdf_from_intermediate_data(bGrid, base, oData, width=1):
+def pdf_from_intermediate_data(bGrid, base, oData, width=1, multiCorr=None):
     title = oData.pdfTitle()
     windows = oData.window
     oGrid = oData.lamGrid - oData.offset #Shift the grid by the offset if any

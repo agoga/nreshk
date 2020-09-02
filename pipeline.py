@@ -17,6 +17,7 @@ from scipy import interpolate
 from astropy.time import Time
 
 from calc_shk import calc_shk
+from calc_shk import hk_windows
 import plotting as plot
 import helpers as h
 
@@ -70,6 +71,45 @@ def import_aligning_spectra(fluxdir, minwl=None, maxwl=None, resolution=1, resid
     return angstroms[sel], series[sel]
     
     
+
+def find_window_offsets(labGrid, lab, tarGrid, targ, smooth):
+    
+    llen = len(labGrid)
+    tlen = len(tarGrid)
+
+
+    labW = hk_windows(labGrid,0,10)
+    tarW = hk_windows(tarGrid,0,10)
+
+    #print(labGrid[labW[:,0]!=0][0])
+    
+    if h.debug==True:
+        print('lab count ' + str(np.count_nonzero(labW)))
+        print('targ count ' + str(np.count_nonzero(tarW)))
+
+    h.debug=True
+    offsets = np.zeros(4)
+    for i in range(3):
+        cLab = labW[:,i]
+        cTar = tarW[:,i]
+
+        
+
+        l1 = labGrid[cLab!=0]
+        l2 = lab[cLab!=0]
+        l3 = tarGrid[cTar!=0]
+        l4 = targ[cTar!=0]
+        
+        print(len(labGrid))
+        print(len(l1))
+
+        offsets[i] = calc_del_lam(l1,l2,l3,l4,.005,i)[0]
+    
+    h.debug=False
+
+    return offsets
+    
+
 #############################################
 #This is the big function we calculate our delta lambe value to place this current
 #spectra in the pipeline in the lab reference frame.
@@ -81,34 +121,49 @@ def import_aligning_spectra(fluxdir, minwl=None, maxwl=None, resolution=1, resid
 #lots of plotting function commented out for debugging since this function does a lot and
 #could certainly be improved on.
 #TODO not called if rvcc provided for star
-def calc_del_lam(labGrid, lab, tarGrid, targ, smooth) :
+def calc_del_lam(labGrid, lab, tarGrid, targ, smooth,tmpDebug=0) :
     tmpGridScale = 1
     dLam = tarGrid[1] - tarGrid[0]
+
+    h.dprint('dlam: ' + str(dLam))
     #print(np.shape(targ))
-    gausdTarg = sc.ndimage.filters.gaussian_filter(targ,smooth/dLam/2)
+    gausdTarg = sc.ndimage.filters.gaussian_filter(targ,(smooth/dLam)/2)#TODO hmmm
     
+
+
+    
+
+
     dLabLam = labGrid[1] - labGrid[0]
     
     #TODO SHOULD 2.55 be h.sigToFWHM?
-    gausedLab = sc.ndimage.filters.gaussian_filter(lab,(dLam/dLabLam)/2.55)
+    gausedLab = lab#sc.ndimage.filters.gaussian_filter(lab,(dLam/dLabLam)/(2.55*2)
 
     #get the lab spectrum into angs div by 10 on angstrom grid for our purposes
-    interpfunc = interpolate.interp1d(labGrid, gausedLab, kind='linear')#,fill_value='extrapolate')
+    interpfunc = interpolate.interp1d(labGrid, gausedLab,fill_value='extrapolate') # kind='linear')#9/1/2020 swapped 'ext..' w 'lin..''
     labInterp=interpfunc(tarGrid)
-
 
 
     #ZERO OUT THE EDGES OF OUR LAB SPECTRA
     #TODO do this with strict values to remove edge errors which may affect correlation
-    #from 0 to first nonzero element of targolap
+    #0 out the lab grid edges based on first and last nonzero element of targolap
+    #h.dprint(labInterp)
     labInterp[:targ.nonzero()[0][0]]=0
     #from last nonzero element to end
     labInterp[targ.nonzero()[0][-1]:]=0
-
+    #h.dprint(labInterp)
     
     #do not consider 0's while taking mean
     labInterp[labInterp==0]=np.nan
     targ[targ==0]=np.nan
+
+
+
+    #plt.figure(figsize=(12,6))
+    #plt.plot(1000*labInterp[targ!=0]-rmsx,'k-')
+    #plt.plot(targ[targ!=0]-rmsy,'g-')
+    #plt.show()
+    #plt.close()
     
     rmsx = np.nanmean(labInterp)
     rmsy =  np.nanmean(targ)
@@ -148,53 +203,76 @@ def calc_del_lam(labGrid, lab, tarGrid, targ, smooth) :
     #if we just use max val, precision is limited to grid spacing.
     #need to do poly only in certain range around center because wings will take over the fit
     fitWidth = 5
-
+    
     xRange = mval + np.arange(2*fitWidth)- fitWidth
     polyFunc = np.polyfit(xRange, correlation[mval-fitWidth:mval+fitWidth],2)
+
+    #corr = correlation[mval-fitWidth:mval+fitWidth]
+    #h.dprint('xRange: ' + str(len(xRange)))
+    #h.dprint('corr: ' + str(len(corr))) 
+    #polyFunc = np.polyfit(xRange, corr,2)
     
     #take the derivative of the function and set equal to 0 for the peak.
     #f=a*x^2 +b*x+c
     #f' = 2*a*x+b = 0 -> x = -b/2a 
     xVal = -polyFunc[1]/(2*polyFunc[0])
     
-    #print(xVal)
-    #ffit = np.polyval(polyFunc,xRange)
-    #plt.figure()
-    #plt.xlim(mval-fitWidth*3,mval+fitWidth*3)
-    #plt.plot(xRange, ffit,'g-')
-    #plt.plot(range(len(correlation)), correlation, 'k-')
-    #plt.show()
-    #plt.close()
+    if h.debug:
+        #print(xVal)
+        #ffit = np.polyval(polyFunc,xRange)
+        plt.figure()
+        #plt.xlim(mval-fitWidth*3,mval+fitWidth*3)
+        #plt.plot(xRange, ffit,'g-')
+        plt.plot(range(len(correlation)), correlation, 'k-')
+        plt.show()
+        plt.close()
     #mval= np.argmax(ffit)
     
     
     #the actual lamda offset is how far from middle we are in pixel space times the
     #pixel to grid ratio
     offset = (xVal-middle)*(tarGrid[1]-tarGrid[0])
-    #print('offset: ' + str(offset))
-
     
-    
-    #used for printing/debuging
-    #scale = np.mean(gausdTarg)/np.mean(labInterp)
 
     #tmpMax = np.argmax(out)
     #print('index of maximum: ' + str(tmpMax) + ' and adjusted delLam: ' + str(tmpMax/len(out)))
     #print(out)
-    #fig, ax = plt.subplots(figsize=(25,5))
-    #ax.ticklabel_format(useOffset=False)
-    #plt.title("Unadjusted stellar spectra over reference spectra")
-    #plt.xlabel("Wavelength (nm)")
-    #plt.ylabel("Scaled irradiance")
-    #plt.xlim([392,398])
-    #plt.ylim([0,2800])
-    #plt.plot(tarGrid, gausdTarg, 'g-')
-    #plt.axvline(x=393.369, color='blue')
-    #plt.axvline(x=396.85, color='blue')
-    #SCALE JUST FOR VIEWING
-    #plt.plot(tarGrid,labInterp*scale, 'k-')
-    #plt.show()
-    #plt.close()
+    if h.debug:
+        
+        #used for printing/debuging
+        scale = np.mean(gausdTarg)/np.mean(labInterp)
+        print('offset: ' + str(offset) + ' and scale: ' + str(scale))
+
+        fig, ax = plt.subplots(figsize=(25,5))
+        ax.ticklabel_format(useOffset=False)
+        plt.title("Unadjusted stellar spectra over reference spectra")
+        plt.xlabel("Wavelength (nm)")
+        plt.ylabel("Scaled irradiance")
+        #plt.xlim([385,405])
+        #plt.ylim([0,2800])
+        plt.plot(tarGrid, gausdTarg, 'g-')
+        plt.plot(tarGrid,labInterp*scale, 'k-')
+        plt.show()
+        plt.close()
+
+        fig, ax = plt.subplots(figsize=(25,5))
+        ax.ticklabel_format(useOffset=False)
+        plt.title("Unadjusted stellar spectra over reference spectra")
+        plt.xlabel("Wavelength (nm)")
+        plt.ylabel("Scaled irradiance")
+        #plt.xlim([385,405])
+        #plt.ylim([0,2800])
+        plt.plot(tarGrid-offset, gausdTarg, 'g-')
+        if tmpDebug is 1:
+            plt.axvline(x=393.369, color='blue')
+        if tmpDebug is 0:
+            plt.axvline(x=396.85, color='blue')
+        #SCALE JUST FOR VIEWING
+        plt.plot(tarGrid,labInterp*scale, 'k-')
+        plt.show()
+        plt.close()
+
+
     
     
     

@@ -42,6 +42,7 @@ from errno import EEXIST
 #timerOut=0
 
       
+debug = False#DONT TRUST THIS BAD ADAM
 
 c=2.99792458e5  #speed of light (km/s)
 
@@ -62,6 +63,8 @@ sigToFWHM = 2.355#used to display a real FWHM value on plots where smoothing occ
 
 lowGOrd = 63
 highGOrd = 66
+
+oldScale = 6/5
 
 siteColors = {  'lsc':["b","Cerro Tololo Interamerican Obs\'"],
                 'cpt':["g","South African Astro Obs\'"],
@@ -176,9 +179,10 @@ class rawData:
 class analyzedData(rawData):
     flat:[]
 
-    offset:float#to make printing easier
+    
     shk:float#
     window:[]#windows
+    offset:float#to make printing easier
 
     day:int
     hour:int
@@ -377,6 +381,11 @@ def bad_spec_detection(lamGrid, targ):
     return bad
 
     #todo clean and place into healpers file
+
+#want to crash? name something print...
+def dprint(input):
+    if debug:
+        print(input)
 
 def mjd_from_hdu(hdu):
     return hdu[0].header['MJD-OBS']

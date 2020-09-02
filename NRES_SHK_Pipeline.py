@@ -297,8 +297,9 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,only=None):
     stars = h.get_immediate_subdirectories(dataPath)
     starData = {}#dictionary for returning from this function
     
-    #loop through every folder in the data files path. 
-    #these folders hold all the data for each star
+    #we're going to loop through all folders in a stars data and determine if each is 
+    #old or new format once thats determined we get the wave/flat/spec data differently
+    #then we should not care about the format anymore and will do the pipeline as normal
     for s in stars:
         #need blank arrays to append to since we don't know length due to bad spectra
         obsFiles=[]
@@ -349,7 +350,7 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,only=None):
             #try to find a flat otherwise fail
             #try:
             if obsRaw.nOrd is 68:
-                continue#REMOVE THIS WHEN YOU WANNA DO NEW SPEC
+                continue#TODO REMOVE THIS WHEN YOU WANNA DO NEW SPEC
 
             fD = flatDict[obsRaw.site]
             fK = h.closestKey(fD,float(obsRaw.mjd))
@@ -380,6 +381,8 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,only=None):
 
             #cross correlation returns a lambda offset(dlam) and save the lab spectra
             correlation = pipe.calc_del_lam(lab[0]/10,lab[1], lamGrid, targOlapf,res)
+            #multiCorr = pipe.find_window_offsets(lab[0]/10,lab[1], lamGrid, targOlapf,res)
+            #print(multiCorr)
 
             dLam = correlation[0]
             labSpec = correlation[2]
@@ -404,19 +407,21 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,only=None):
             #are negative. Makes sense to me that those spectra should be tossed
             badSpec = h.bad_spec_detection_v2(lamGrid-dLam,targOlapf)          
 
+            
             if badSpec:
                 badSpec = True
-                badD.append(obsRaw.mjd)
+                badD.append(obsRaw.mjd)         #fugly
                 badReason+=(' bad spec detector.')
             #among other things?!
-            if shk < 0 or shk > 1: 
+            elif shk < 0 or shk > 1:
+                badD.append(obsRaw.mjd)
                 badSpec = True  
                 badReason+=('shk above 1 or below 0. ')
             elif flatRet[2] == True:
+                badD.append(obsRaw.mjd)
                 badSpec = True
                 badReason+=(' bad flat. ')
 
-            
 
 
             oData = h.analyzedData(obsRaw,lamGrid,flatOlap,targOlapf,shk,dLam,False,badSpec,windows)
@@ -458,18 +463,12 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,only=None):
         pickle.dump(analyzed,f)
         f.close()
 
+        print(badD)
         plot.plot_timeseries(analyzed,badD)
-
-        #we're going to loop through all folders in a stars data and determine if each is 
-        #old or new format once thats determined we get the wave/flat/spec data differently
-        #then we should not care about the format anymore and will do the pipeline as normal
-        #for path, subdirs, files in os.walk(dataPath + starName):
-            #walk through each folder this is the main loop over all observations
-            #each dir here should only contain one observation
-            #print(subdirs)
+        
         
         starData.update({starName: analyzed})
-    print(badD)
+        
     return analyzed#pass back analyzed data           
 
                 

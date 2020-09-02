@@ -1,5 +1,9 @@
 DONT DELETE ITEMS, USE FIXED FOR FEATURE LIST
 
+epi eri is bad test star, reversal ruins windowed shifting
+
+Lab spec in intermediate plot is broken somehow
+
 NOT DOING THIS-swap code and output to angstroms
 
 FIXED-remove idl remenants and other obsolete code/variables
@@ -8,7 +12,7 @@ once folder order set, place functions on top for easy finding
 
 cofirm that we should always use filename for star over the star name from fits header
 
-Convolutions take the most time(outside of plotting)
+FIXED Convolutions take the most time(outside of plotting)
 
 FIXED-Easy to use plot function to take this pipeline data and print it with other data
 
@@ -16,12 +20,12 @@ Try catch around single observations as well as stars to allow for large data se
 
 FIXED Old spectra format from NRES may not be running both observations. THIS IS DUE TO TWO OBS PER FOLDER 
 
-check calc_shk is using windows function properly, may be accessing array wrong.
+I BELIEVE FINE check calc_shk is using windows function properly, may be accessing array wrong.
 
-set up optional radial velocity shifting(if statement to ignore cross-corr align)
+MOSTLY FIXED, TEST NEEDED set up optional radial velocity shifting(if statement to ignore cross-corr align)
 DOCUMENT THIS
 
-STORE A STARS BAD DATA FILE AND SKIP IT NEXT re-RUN
+SEMI FIXEDSTORE A STARS BAD DATA FILE AND SKIP IT NEXT re-RUN
 
 
 FIXED change all array shapes to python style to remove transpose

@@ -137,25 +137,28 @@ def calc_targOlapf(raw,lamGrid, flatOlap):
 #rvcc = redshift of target star relative to lab. (km/s)
 #todo move this function to calcshk or copy comments
 # rvcc = redshift of target star relative to lab. (km/s)
-def hk_windows(rvcc,lamGrid,cahLam,cakLam,lamB,lamR):
+def hk_windows(lamGrid,rvcc=None,scaleWidth=1):
     #brown
     #make output array
     nLam = len(lamGrid)
     windows = np.zeros((nLam,4),dtype=np.float32)
-    z = 1. +rvcc/h.c
-    
+
+    z = 1
+    if rvcc is not None:
+        z = 1. +rvcc/h.c
+
     
     #emmission features
     #creates a triangle filter around CA H and K
     # H 
-    d0 = abs(lamGrid-h.cahLam*z)/h.lineWid
+    d0 = abs(lamGrid-h.cahLam*z)/(h.lineWid*scaleWidth)
     s = (d0<=1.0).nonzero()
     if len(s) > 0:
         #print('g')
         #print(1.-d0[s])
         windows[s,0]=1.-d0[s] 
     # K
-    d1 = abs(lamGrid-h.cakLam*z)/h.lineWid
+    d1 = abs(lamGrid-h.cakLam*z)/(h.lineWid*scaleWidth)
     s = (d1<=1.0).nonzero()
     if len(s) > 0:
         windows[s,1]=1.-d1[s] 
@@ -163,17 +166,17 @@ def hk_windows(rvcc,lamGrid,cahLam,cakLam,lamB,lamR):
     #continum bands
     #no filter applied to continum bands
     #r-band
-    d2 = abs(lamGrid-h.lamR*z)*2./h.conWid
+    d2 = (abs(lamGrid-h.lamR*z)*2.)/(h.conWid*scaleWidth)
     s = (d2<=1.0).nonzero()
     if len(s) > 0:
         windows[s,2]=1.
     #v-band
-    d3 = abs(lamGrid-h.lamB*z)*2./h.conWid
+    d3 = (abs(lamGrid-h.lamB*z)*2.)/(h.conWid*scaleWidth)
     s = (d3<=1.0).nonzero()
     if len(s) > 0:
         windows[s,3]=1.
         
-    return windows, lamB, lamR
+    return windows
 
 #This is the actual function to calculate the SHK
 #Takes the standard lamda grid, and correlated/noise free target data(targOlapf)
@@ -187,7 +190,7 @@ def hk_windows(rvcc,lamGrid,cahLam,cakLam,lamB,lamR):
 # not extracted.  Therefore, fB is approximated as FR*K(Teff), where the 
 # function K is the ratio of Planck functions in the red and blue bandpasses.
 #END TIM BROWN COMMENTS
-def calc_shk(lamGrid, targOlapf, raw):
+def calc_shk(lamGrid, targOlapf, raw, rvcc=None):
     starName=raw.star.strip('/')
     
     
@@ -207,14 +210,14 @@ def calc_shk(lamGrid, targOlapf, raw):
 
     if raw.nOrd == 67:
         #this function gives us the regions of our arrays which hold the information we need to sum
-        windows = hk_windows(rv, lamGrid,h.cahLam,h.cakLam,h.lamB,h.lamR)[0]
+        windows = hk_windows(lamGrid,rv)
 
         fh=(targOlapf*windows[:,0]).sum()
         fk=(targOlapf*windows[:,1]).sum()
         fr=(targOlapf*windows[:,2]).sum()
     elif raw.nOrd == 68:
         #this function gives us the regions of our arrays which hold the information we need to sum
-        windows = smart_hk_windows(rv, lamGrid,h.cahLam,h.cakLam,h.lamB,h.lamR)[0]
+        windows = smart_hk_windows(rv, lamGrid)[0]
 
         fh=(targOlapf*windows[:,0]).sum()
         fk=(targOlapf*windows[:,1]).sum()
@@ -248,6 +251,10 @@ def calc_shk(lamGrid, targOlapf, raw):
     num = (fh+fk)*gain
     den = (fr+fb)*gain
     alpha = h.siteAlpha[raw.site]
+
+    if hasattr(raw,'format') and raw.format == True:
+        alpha = alpha * h.oldScale
+
     shk = alpha*(fh+fk)/(fr+fb)
     #print("shk: "+ str(shk))
 
@@ -255,7 +262,7 @@ def calc_shk(lamGrid, targOlapf, raw):
 
 
 #smarts specific hk windows with V-Band included
-def smart_hk_windows(rvcc,lamGrid,cahLam,cakLam,lamB,lamR):
+def smart_hk_windows(lamGrid,rvcc=None):
     #make output array
     nLam = len(lamGrid)
     windows = np.zeros((nLam,4),dtype=np.float32)
@@ -290,8 +297,12 @@ def smart_hk_windows(rvcc,lamGrid,cahLam,cakLam,lamB,lamR):
     if len(s) > 0:
         windows[s,3]=1.
         
-    return windows, lamB, lamR
+    return windows
 
+
+
+
+#DEPRECATED
 #smarts specific calc_shk which just calls the special windows function
 #to find the v-band window and uses the real v-band data
 def smart_calc_shk(lamGrid, targOlapf, rvcc, teff=6200.):
@@ -304,7 +315,7 @@ def smart_calc_shk(lamGrid, targOlapf, rvcc, teff=6200.):
     kk=8.*2.40#31.             # factor to make shk into equivalent width (a guess!)
     
     #this function gives us the regions of our arrays which hold the information we need to sum
-    windows = smart_hk_windows(rvcc, lamGrid,h.cahLam,h.cakLam,h.lamB,h.lamR)[0]
+    windows = smart_hk_windows(rvcc, lamGrid)[0]
 
     fh=(targOlapf*windows[:,0]).sum()
     fk=(targOlapf*windows[:,1]).sum()
