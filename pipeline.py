@@ -217,15 +217,15 @@ def calc_del_lam(labGrid, lab, tarGrid, targ, smooth,tmpDebug=0) :
     #f' = 2*a*x+b = 0 -> x = -b/2a 
     xVal = -polyFunc[1]/(2*polyFunc[0])
     
-    if h.debug:
+    #if h.debug:
         #print(xVal)
         #ffit = np.polyval(polyFunc,xRange)
-        plt.figure()
+        #plt.figure()
         #plt.xlim(mval-fitWidth*3,mval+fitWidth*3)
         #plt.plot(xRange, ffit,'g-')
-        plt.plot(range(len(correlation)), correlation, 'k-')
-        plt.show()
-        plt.close()
+        #plt.plot(range(len(correlation)), correlation, 'k-')
+        #plt.show()
+        #plt.close()
     #mval= np.argmax(ffit)
     
     
@@ -237,23 +237,23 @@ def calc_del_lam(labGrid, lab, tarGrid, targ, smooth,tmpDebug=0) :
     #tmpMax = np.argmax(out)
     #print('index of maximum: ' + str(tmpMax) + ' and adjusted delLam: ' + str(tmpMax/len(out)))
     #print(out)
-    if h.debug:
+    if False:#h.debug:
         
         #used for printing/debuging
-        scale = np.mean(gausdTarg)/np.mean(labInterp)
-        print('offset: ' + str(offset) + ' and scale: ' + str(scale))
+        #scale = np.mean(gausdTarg)/np.mean(labInterp)
+        #print('offset: ' + str(offset) + ' and scale: ' + str(scale))
 
-        fig, ax = plt.subplots(figsize=(25,5))
-        ax.ticklabel_format(useOffset=False)
-        plt.title("Unadjusted stellar spectra over reference spectra")
-        plt.xlabel("Wavelength (nm)")
-        plt.ylabel("Scaled irradiance")
+        #fig, ax = plt.subplots(figsize=(25,5))
+        #ax.ticklabel_format(useOffset=False)
+        #plt.title("Unadjusted stellar spectra over reference spectra")
+        #plt.xlabel("Wavelength (nm)")
+        #plt.ylabel("Scaled irradiance")
         #plt.xlim([385,405])
         #plt.ylim([0,2800])
-        plt.plot(tarGrid, gausdTarg, 'g-')
-        plt.plot(tarGrid,labInterp*scale, 'k-')
-        plt.show()
-        plt.close()
+        #plt.plot(tarGrid, gausdTarg, 'g-')
+        #plt.plot(tarGrid,labInterp*scale, 'k-')
+        #plt.show()
+        #plt.close()
 
         fig, ax = plt.subplots(figsize=(25,5))
         ax.ticklabel_format(useOffset=False)
@@ -268,7 +268,7 @@ def calc_del_lam(labGrid, lab, tarGrid, targ, smooth,tmpDebug=0) :
         if tmpDebug is 0:
             plt.axvline(x=396.85, color='blue')
         #SCALE JUST FOR VIEWING
-        plt.plot(tarGrid,labInterp*scale, 'k-')
+        #plt.plot(tarGrid,labInterp*scale, 'k-')
         plt.show()
         plt.close()
 
