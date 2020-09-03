@@ -181,7 +181,7 @@ class analyzedData(rawData):
 
     
     shk:float#
-    window:[]#windows
+    window:[]#window order: Ca H, Ca K, R band, B band
     offset:[]#list of offsets for each window
     #offset:float
 

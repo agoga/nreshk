@@ -101,7 +101,7 @@ def pdf_from_intermediate_data(bGrid, base, oData, width=1):
     hOffset = oData.offset[0]
     kOffset = oData.offset[1]
     rOffset = oData.offset[2]
-    bOffset = 0#oData.offsets[3]
+    bOffset = oData.offset[3]
     #center of red continuum band (nm, vacuum)
     #print('offsets')
     #print(hOffset)
@@ -207,7 +207,9 @@ def pdf_from_intermediate_data(bGrid, base, oData, width=1):
         
         #H/K/Red band plots zoomed
         #use exactly the windows that are gotten from hk_windows plus small buffer
-        cur=windows[:,0]
+
+        #cur=windows[:,0] 9/3/2020
+        cur=windows[0]
         hkWidth=h.lineWid + .005
         rWidth =h.conWid/2 +.05
         bWidth =h.conWid/2 +.05
@@ -216,20 +218,20 @@ def pdf_from_intermediate_data(bGrid, base, oData, width=1):
         hPlt.plot(oGrid[cur!=0]-hOffset,obs[cur!=0],'b-')
         hPlt.set_xlim(calH-hkWidth,calH+hkWidth)
         
-        cur=windows[:,1]
+        cur=windows[1]
         kPlt.axvline(x=calK,color=kColor)
         kPlt.plot(oGrid[cur!=0]-kOffset,obs[cur!=0],'b-')
         kPlt.set_xlim(calK-hkWidth,calK+hkWidth)
 
 
-        cur=windows[:,3]
+        cur=windows[3]
         bPlt.plot(oGrid[cur!=0]-bOffset,obs[cur!=0])
         bPlt.set_xlim(lamB-bWidth, lamB+bWidth)
         #get blue lines
         bMin = (oGrid[cur!=0]-bOffset)[0]
         bMax = (oGrid[cur!=0]-bOffset)[-1]
         
-        cur=windows[:,2]
+        cur=windows[2]
         rPlt.plot(oGrid[cur!=0]-rOffset,obs[cur!=0])
         rPlt.set_xlim(lamR-rWidth, lamR+rWidth)
         

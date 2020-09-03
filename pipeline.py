@@ -18,9 +18,14 @@ from astropy.time import Time
 
 from calc_shk import calc_shk
 from calc_shk import hk_windows
+from calc_shk import create_window
 import plotting as plot
 import helpers as h
 
+#remove once calc shk hack gone
+from astropy.modeling.blackbody import blackbody_lambda
+from astropy import units as u
+#E remove
 #this file holds pipeline functions which are not telescope dependant
 
 #imports from a lot of data the lab frame spectra so we may cross-correlate onto this and
@@ -72,44 +77,94 @@ def import_aligning_spectra(fluxdir, minwl=None, maxwl=None, resolution=1, resid
     
     
 
-def find_window_offsets(labGrid, lab, tarGrid, targ, smooth):
+
+def create_integration_windows(tarGrid, targ, offsets=None):
+    if offsets is None:
+        offsets = np.zeros(4,dtype=np.float32)
     
+    windows = []
+
+    windows.append(create_window(tarGrid-offsets[0],h.cahLam,h.lineWid,True))
+    windows.append(create_window(tarGrid-offsets[1],h.cakLam,h.lineWid,True))
+    windows.append(create_window(tarGrid-offsets[2],h.lamR,h.conWid,True))
+    windows.append(create_window(tarGrid-offsets[3],h.lamB,h.conWid,True))
+
+    return windows
+    
+
+
+
+def find_window_offsets(labGrid, lab, tarGrid, targ, scale, smooth):
     llen = len(labGrid)
     tlen = len(tarGrid)
 
+    windows = [[],[]]
+    #Ca H
+    windows[0].append(create_window(labGrid, h.cahLam, scale*h.lineWid, True))
+    windows[1].append(create_window(tarGrid, h.cahLam, scale*h.lineWid, True))
+    #Ca k
+    windows[0].append(create_window(labGrid, h.cakLam, scale*h.lineWid, True))
+    windows[1].append(create_window(tarGrid, h.cakLam, scale*h.lineWid, True))
+    #R band
+    windows[0].append(create_window(labGrid, h.lamR, scale*h.conWid, False))
+    windows[1].append(create_window(tarGrid, h.lamR, scale*h.conWid, False))
+    #B Band
+    windows[0].append(create_window(labGrid, h.lamB, scale*h.conWid, False))
+    windows[1].append(create_window(tarGrid, h.lamB, scale*h.conWid, False))
 
-    labW = hk_windows(labGrid,0,10)
-    tarW = hk_windows(tarGrid,0,10)
+    #windows[0].append(create_window(labGrid, h.lamR, scale*h.conWid, False))
+    #windows[1].append(create_window(tarGrid, h.lamB, scale*h.conWid, False))
 
-    #print(labGrid[labW[:,0]!=0][0])
+    #labWin = [lhWindow,lkWindow,lrWindow]
+    #tarWin = [thWindow,tkWindow,trWindow]
+    if h.debug:
+        plt.figure()
+        cur=windows[1][0]
+        plt.plot(tarGrid[cur!=0],targ[cur!=0])#*cur[cur!=0],'k-')
+        plt.show()
+        plt.close()
+        plt.figure()
+        cur=windows[1][1]
+        plt.plot(tarGrid[cur!=0],targ[cur!=0])#*cur[cur!=0],'k-')
+        plt.show()
+        plt.close()
+        plt.figure()
+        cur=windows[1][2]
+        plt.plot(tarGrid[cur!=0],targ[cur!=0])#*cur[cur!=0],'k-')
+        plt.show()
+        plt.close()
     
-    if h.debug==True:
-        print('lab count ' + str(np.count_nonzero(labW)))
-        print('targ count ' + str(np.count_nonzero(tarW)))
 
-    h.debug=False
     offsets = []
-    for i in range(3):
-        cLab = labW[:,i]
-        cTar = tarW[:,i]
 
-        
+    for i in range(3):
+        cLab=windows[0][i]
+        cTar=windows[1][i]
 
         l1 = labGrid[cLab!=0]
         l2 = lab[cLab!=0]
         l3 = tarGrid[cTar!=0]
         l4 = targ[cTar!=0]
-        
-        #print(len(labGrid))
-        #print(len(l1))
+        if h.debug:
+            plt.figure()
+            cur=windows[0][i]
+            plt.plot(labGrid[cur!=0],lab[cur!=0])#*cur[cur!=0],'k-')
+            plt.show()
+            plt.close()
+
+            plt.figure()
+            cur=windows[1][i]
+            plt.plot(tarGrid[cur!=0],targ[cur!=0])#*cur[cur!=0],'k-')
+            plt.show()
+            plt.close()
 
         out = calc_del_lam(l1,l2,l3,l4,.005,i)
         offsets.append(out[0])
         labInterp = out[1]
     
-    h.debug=False
+    offsets.append(0)#temp blue hack
+    return offsets#, labInterp, tarW
 
-    return offsets, labInterp, tarW
     
 
 #############################################
@@ -196,7 +251,7 @@ def calc_del_lam(labGrid, lab, tarGrid, targ, smooth,tmpDebug=0) :
     #width is used for local maximum finding
     #1 is a number that worked here for smarts and NRES data. MAY NEED TO BE ADJUSTED for new data
     width = int(1/dLam)
-
+    
     #max value is the index of the maximum value(local max around middle of array if width used)
     mval = middle-width+np.argmax(correlation[middle-width:middle+width])
     
@@ -219,22 +274,22 @@ def calc_del_lam(labGrid, lab, tarGrid, targ, smooth,tmpDebug=0) :
     #f' = 2*a*x+b = 0 -> x = -b/2a 
     xVal = -polyFunc[1]/(2*polyFunc[0])
     
-    #if h.debug:
-        #print(xVal)
+    if h.debug:
+        print(xVal)
         #ffit = np.polyval(polyFunc,xRange)
-        #plt.figure()
+        plt.figure()
         #plt.xlim(mval-fitWidth*3,mval+fitWidth*3)
         #plt.plot(xRange, ffit,'g-')
-        #plt.plot(range(len(correlation)), correlation, 'k-')
-        #plt.show()
-        #plt.close()
+        plt.plot(range(len(correlation)), correlation, 'k-')
+        plt.show()
+        plt.close()
     #mval= np.argmax(ffit)
     
     
     #the actual lamda offset is how far from middle we are in pixel space times the
     #pixel to grid ratio
     offset = (xVal-middle)*(tarGrid[1]-tarGrid[0])
-    
+    h.dprint('offset '+str(offset))
 
     #tmpMax = np.argmax(out)
     #print('index of maximum: ' + str(tmpMax) + ' and adjusted delLam: ' + str(tmpMax/len(out)))
@@ -359,14 +414,32 @@ def sum_daily_data(inData,starName,labSpec):
         
         combinedTarg = np.zeros(len(curD.targOlapf))
         lamGrid = curD.lamGrid#use the same lamGrid for all of the observations to average
+        windows = curD.window
+
+
+        #badlybad TODO
+        fh=(curD.targOlapf*windows[0]).sum()
+        #windows = hk_windows(lamGrid-offsets[1],rv)
+        fk=(curD.targOlapf*windows[1]).sum()
+        #windows = hk_windows(lamGrid-offsets[2],rv)
+        fr=(curD.targOlapf*windows[2]).sum()
+
         #sameMjd = sameD.mjd
         for day in sameD:
         
+            dWindow = day.window
+
+            fh=fh +(day.targOlapf*dWindow[0]).sum()
+            #windows = hk_windows(lamGrid-offsets[1],rv)
+            fk=fk +(day.targOlapf*dWindow[1]).sum()
+            #windows = hk_windows(lamGrid-offsets[2],rv)
+            fr=fr+(day.targOlapf*dWindow[2]).sum()
             #need to interpolate because all the observations have slightly different lamda grids
             #put them all onto the referece spectra's grid held in curLamGrid
-            interpfunc = interpolate.interp1d(day.lamGrid-day.offset, day.targOlapf, kind='linear',fill_value='extrapolate')
-            combinedTarg+=interpfunc(lamGrid)
+            #interpfunc = interpolate.interp1d(day.lamGrid-day.offset, day.targOlapf, kind='linear',fill_value='extrapolate')
+            #combinedTarg+=interpfunc(lamGrid)
             
+
 
             #combinedTarg = curTarg        
 
@@ -381,14 +454,40 @@ def sum_daily_data(inData,starName,labSpec):
             done.append(day.mjd)
 
         #end combining loop
+#############################################################
+        #START OF CALC SHK NEEDS TO BE GONE
+        starName=curD.star.strip('/')
+    
+    
+        gain=3.4           # e-/ADU
 
+
+        #atm we're not going to apply the radial velocity and just use the adjusted spectra
+        rv = 0#rv/10000 Need RV dictionary
+        tempEff = 0 #base value if not found BUT BAD
+        tempEff = h.tEffLookup[starName]
+        if curD.nOrd == 67:
+        #the SHK calculation with pseudo V-Band
+            plFactor = blackbody_lambda(h.lamB*u.nm,tempEff*u.K).value/blackbody_lambda(h.lamR*u.nm,tempEff*u.K).value
+            fb = fr*plFactor
+
+        num = (fh+fk)*gain
+        den = (fr+fb)*gain
+        alpha = h.siteAlpha[curD.site]
+
+        if hasattr(curD,'format') and curD.format == True:
+            alpha = alpha * h.oldScale
+
+        shk = alpha*(fh+fk)/(fr+fb)
+        #END
+#######################################
         #find SHK with new offset to lamda grid
-        shkRet = calc_shk(lamGrid, combinedTarg,curD)
+        #shkRet = calc_shk(lamGrid, combinedTarg,curD)
 
-        shk = shkRet[0]
-        windows = shkRet[1]
+        #shk = shkRet[0]
+        #windows = shkRet[1]
 
-        combData = h.analyzedData(curD.raw(),lamGrid,[],combinedTarg,shk,0,True,False,windows)
+        combData = h.analyzedData(curD.raw(),lamGrid,[],combinedTarg,shk,curD.offset,True,False,windows)
 
 
         outputDir = combData.outputDir()

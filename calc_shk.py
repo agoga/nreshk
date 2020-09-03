@@ -134,6 +134,35 @@ def calc_targOlapf(raw,lamGrid, flatOlap):
     
     return targOlapf
     
+
+#could easily pass a function for the pass we'd like but now it's either triangle or flat
+def create_window(lamGrid,loc,width,triangle=True,rvcc=None):
+    #brown
+    #make output array
+    nLam = len(lamGrid)
+    window = np.zeros(nLam,dtype=np.float32)
+    z = 1
+    if rvcc is not None:
+        z = 1. +rvcc/h.c
+
+
+    #emmission features
+    #creates a triangle filter around CA H and K
+    # H 
+    if triangle:
+        d = abs(lamGrid-loc*z)/(width)
+        s = (d<=1.0).nonzero()
+
+        if len(s) > 0:#         |
+            window[s]=1.-d[s]#  |
+    else:#why do we need *2?    V
+        d = (abs(lamGrid-loc*z)*2.)/(width)
+        s = (d<=1.0).nonzero()
+        if len(s) > 0:
+            window[s]=1.
+
+    return window
+
 #rvcc = redshift of target star relative to lab. (km/s)
 #todo move this function to calcshk or copy comments
 # rvcc = redshift of target star relative to lab. (km/s)
@@ -190,7 +219,7 @@ def hk_windows(lamGrid,rvcc=None,scaleWidth=1):
 # not extracted.  Therefore, fB is approximated as FR*K(Teff), where the 
 # function K is the ratio of Planck functions in the red and blue bandpasses.
 #END TIM BROWN COMMENTS
-def calc_shk(lamGrid, targOlapf, raw, offsets, rvcc=None):
+def calc_shk(lamGrid, targOlapf, raw, windows, rvcc=None):
     starName=raw.star.strip('/')
     
     
@@ -210,41 +239,41 @@ def calc_shk(lamGrid, targOlapf, raw, offsets, rvcc=None):
 
     if raw.nOrd == 67:
         #this function gives us the regions of our arrays which hold the information we need to sum
-        windows = hk_windows(lamGrid-offsets[0],rv)
-        fh=(targOlapf*windows[:,0]).sum()
+        #windows = hk_windows(lamGrid-offsets[0],rv)
+        fh=(targOlapf*windows[0]).sum()
 
-        windows = hk_windows(lamGrid-offsets[1],rv)
-        fk=(targOlapf*windows[:,1]).sum()
+        #windows = hk_windows(lamGrid-offsets[1],rv)
+        fk=(targOlapf*windows[1]).sum()
 
-        windows = hk_windows(lamGrid-offsets[2],rv)
-        fr=(targOlapf*windows[:,2]).sum()
+        #windows = hk_windows(lamGrid-offsets[2],rv)
+        fr=(targOlapf*windows[2]).sum()
     elif raw.nOrd == 68:
         #this function gives us the regions of our arrays which hold the information we need to sum
-        windows = smart_hk_windows(lamGrid,rv)
+        #windows = smart_hk_windows(lamGrid,rv)
 
-        fh=(targOlapf*windows[:,0]).sum()
-        fk=(targOlapf*windows[:,1]).sum()
-        fr=(targOlapf*windows[:,2]).sum()
-        fb=(targOlapf*windows[:,3]).sum()
+        fh=(targOlapf*windows[0]).sum()
+        fk=(targOlapf*windows[1]).sum()
+        fr=(targOlapf*windows[2]).sum()
+        fb=(targOlapf*windows[3]).sum()
 
     
-    windows = hk_windows(lamGrid,rv)
-    
-    #plt.figure()
-    #cur=windows[:,0]
-    #plt.plot(lamGrid[cur!=0],targOlapf[cur!=0])#*cur[cur!=0],'k-')
-    #plt.show()
-    #plt.close()
-    #plt.figure()
-    #cur=windows[:,1]
-    #plt.plot(lamGrid[cur!=0],targOlapf[cur!=0])#*cur[cur!=0],'k-')
-    #plt.show()
-    #plt.close()
-    #plt.figure()
-    #cur=windows[:,2]
-    #plt.plot(lamGrid[cur!=0],targOlapf[cur!=0])#*cur[cur!=0],'k-')
-    #plt.show()
-    #plt.close()
+    #windows = hk_windows(lamGrid,rv)
+    if h.debug:
+        plt.figure()
+        cur=windows[0]
+        plt.plot(lamGrid[cur!=0],targOlapf[cur!=0])#*cur[cur!=0],'k-')
+        plt.show()
+        plt.close()
+        plt.figure()
+        cur=windows[1]
+        plt.plot(lamGrid[cur!=0],targOlapf[cur!=0])#*cur[cur!=0],'k-')
+        plt.show()
+        plt.close()
+        plt.figure()
+        cur=windows[2]
+        plt.plot(lamGrid[cur!=0],targOlapf[cur!=0])#*cur[cur!=0],'k-')
+        plt.show()
+        plt.close()
     
     if raw.nOrd == 67:
         #the SHK calculation with pseudo V-Band
@@ -265,7 +294,7 @@ def calc_shk(lamGrid, targOlapf, raw, offsets, rvcc=None):
 
 
 #smarts specific hk windows with V-Band included
-def old_hk_windows(lamGrid,rvcc=None):
+def old_hk_windows(lamGrid,rvcc=0):
     #make output array
     nLam = len(lamGrid)
     windows = np.zeros((nLam,3),dtype=np.float32)
@@ -277,9 +306,8 @@ def old_hk_windows(lamGrid,rvcc=None):
     # H 
     d0 = abs(lamGrid-h.cahLam*z)/h.lineWid
     s = (d0<=1.0).nonzero()
+    print('old ' + str(len(s)))
     if len(s) > 0:
-        #print('g')
-        #print(1.-d0[s])
         windows[s,0]=1.-d0[s] 
     # K
     d1 = abs(lamGrid-h.cakLam*z)/h.lineWid

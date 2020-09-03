@@ -379,14 +379,25 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,only=None):
             #get the target data minus the flat
             targOlapf = calc_targOlapf(obsRaw, lamGrid, flatOlap)
 
+
+            from calc_shk import old_hk_windows
+
+            #wins = old_hk_windows(lamGrid)
+                                            #porque esto?
+            #bigger windows to align with
+            #aligningWins = pipe.create_shk_windows(lab[0]/10,lab[1], lamGrid, targOlapf, scale=10)
+            offsets = pipe.find_window_offsets(lab[0]/10,lab[1], lamGrid, targOlapf, scale=12, smooth=res)
+            
+            integrationWins = pipe.create_integration_windows(lamGrid, targOlapf,offsets)
+
             #cross correlation returns a lambda offset(dlam) and save the lab spectra
             #quick fix TODO FIX
             labout = pipe.calc_del_lam(lab[0]/10,lab[1], lamGrid, targOlapf,res)
-            correlation = pipe.find_window_offsets(lab[0]/10,lab[1], lamGrid, targOlapf,res)
+            labSpec = labout[1]
             #print(multiCorr)
 
-            offsets = correlation[0]
-            labSpec = labout[1]
+            
+            
             
 
 
@@ -396,11 +407,11 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,only=None):
             # rv = dLam/ lamRef * sc.c 
             #rv from meters to km/s as desired by hk_windows
             #find SHK with new offset to lamda grid
-            shkRet = calc_shk(lamGrid, targOlapf, obsRaw, offsets)
+            shkRet = calc_shk(lamGrid, targOlapf, obsRaw, integrationWins)
             #shkRet = old_calc_shk(lamGrid-offsets, targOlapf, obsRaw)
             shk = shkRet[0]
             windows = shkRet[1]
-            windows = correlation[2]
+            #windows = correlation[2]
             
             #time to toss bad spec so they won't be summed
             badSpec = False
@@ -428,7 +439,7 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,only=None):
 
 
 
-            oData = h.analyzedData(obsRaw,lamGrid,flatOlap,targOlapf,shk,offsets,False,badSpec,windows)
+            oData = h.analyzedData(obsRaw,lamGrid,flatOlap,targOlapf,shk,offsets,False,badSpec,integrationWins)
 
             outputDir = oData.starDir()
             decimalYr = oData.decimalYr
