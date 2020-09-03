@@ -16,7 +16,6 @@ import logging
 
 from calc_shk import calc_targOlapf
 from calc_shk import calc_shk
-from calc_shk import smart_calc_shk
 import pickle
 import pprint
 import pickle

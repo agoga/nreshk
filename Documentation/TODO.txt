@@ -2,6 +2,8 @@ DONT DELETE ITEMS, USE FIXED FOR FEATURE LIST
 
 epi eri is bad test star, reversal ruins windowed shifting
 
+Check if larger windows in multi function means larger integration window
+
 Lab spec in intermediate plot is broken somehow
 
 NOT DOING THIS-swap code and output to angstroms

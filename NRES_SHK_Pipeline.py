@@ -23,7 +23,7 @@ import pipeline as pipe
 import plotting as plot
 from calc_shk import calc_targOlapf
 from calc_shk import calc_shk
-from calc_shk import smart_calc_shk
+from calc_shk import old_calc_shk
 #This is the flat field dictionary creator.
 #it must be run before the pipeline is run since we need the flatDict var
 #do not run create_flat_dict_file unless you have added a new flat field to the flats folder
@@ -380,12 +380,14 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,only=None):
             targOlapf = calc_targOlapf(obsRaw, lamGrid, flatOlap)
 
             #cross correlation returns a lambda offset(dlam) and save the lab spectra
-            correlation = pipe.calc_del_lam(lab[0]/10,lab[1], lamGrid, targOlapf,res)
-            #multiCorr = pipe.find_window_offsets(lab[0]/10,lab[1], lamGrid, targOlapf,res)
+            #quick fix TODO FIX
+            labout = pipe.calc_del_lam(lab[0]/10,lab[1], lamGrid, targOlapf,res)
+            correlation = pipe.find_window_offsets(lab[0]/10,lab[1], lamGrid, targOlapf,res)
             #print(multiCorr)
 
-            dLam = correlation[0]
-            labSpec = correlation[2]
+            offsets = correlation[0]
+            labSpec = labout[1]
+            
 
 
             #radial velocity calculation
@@ -394,10 +396,11 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,only=None):
             # rv = dLam/ lamRef * sc.c 
             #rv from meters to km/s as desired by hk_windows
             #find SHK with new offset to lamda grid
-            shkRet = calc_shk(lamGrid-dLam, targOlapf, obsRaw)
+            shkRet = calc_shk(lamGrid, targOlapf, obsRaw, offsets)
+            #shkRet = old_calc_shk(lamGrid-offsets, targOlapf, obsRaw)
             shk = shkRet[0]
             windows = shkRet[1]
-
+            windows = correlation[2]
             
             #time to toss bad spec so they won't be summed
             badSpec = False
@@ -405,7 +408,8 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,only=None):
 
             #not included but may need to be, check if any values of targolapf
             #are negative. Makes sense to me that those spectra should be tossed
-            badSpec = h.bad_spec_detection_v2(lamGrid-dLam,targOlapf)          
+            #badSpec = h.bad_spec_detection_v2(lamGrid-offsets,targOlapf) 
+            badSpec = h.bad_spec_detection_v2(lamGrid,targOlapf)          
 
             
             if badSpec:
@@ -424,7 +428,7 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,only=None):
 
 
 
-            oData = h.analyzedData(obsRaw,lamGrid,flatOlap,targOlapf,shk,dLam,False,badSpec,windows)
+            oData = h.analyzedData(obsRaw,lamGrid,flatOlap,targOlapf,shk,offsets,False,badSpec,windows)
 
             outputDir = oData.starDir()
             decimalYr = oData.decimalYr
@@ -448,7 +452,7 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,only=None):
         #We could likely functionize from individual observation folder-> data output as well
         #but if people are interested in putting data through this pipeline from other telescopes
         #many parts of the above code must be changed. The below would not need to be changed.
-        analyzed = pipe.sum_daily_data(analyzed,starName,labSpec)
+        #analyzed = pipe.sum_daily_data(analyzed,starName,labSpec)
 
         #save all the stars data to file for reloading 
         #just in case it hasnt been made

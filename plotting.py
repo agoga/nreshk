@@ -89,16 +89,27 @@ def plot_timeseries(inData,bad, fig = None, ax = None):
 ##This is the massive printing function to create a report of each observation pushed through the
 #pipeline.
 #def pdf_from_intermediate_data(bGrid, base, oGrid, obs, windows, title, path, flat='', width=1):
-def pdf_from_intermediate_data(bGrid, base, oData, width=1, multiCorr=None):
+def pdf_from_intermediate_data(bGrid, base, oData, width=1):
     title = oData.pdfTitle()
     windows = oData.window
-    oGrid = oData.lamGrid - oData.offset #Shift the grid by the offset if any
+    oGrid = oData.lamGrid#- oData.offset[0] #Shift the grid by the offset if any
     flat = oData.flat
     obs = oData.targOlapf
     calH = h.cahLam#396.847
     calK = h.cakLam#393.366
+
+    hOffset = oData.offset[0]
+    kOffset = oData.offset[1]
+    rOffset = oData.offset[2]
+    bOffset = 0#oData.offsets[3]
     #center of red continuum band (nm, vacuum)
-    
+    #print('offsets')
+    #print(hOffset)
+    ##print(kOffset)
+    #print(rOffset)
+
+    #print(np.shape(obs))
+    #print(np.shape(base))
     #create the directories for pdf plotting and save every intermediate data array
 
     outputDir = oData.outputDir()
@@ -202,29 +213,29 @@ def pdf_from_intermediate_data(bGrid, base, oData, width=1, multiCorr=None):
         bWidth =h.conWid/2 +.05
         
         hPlt.axvline(x=calH,color=hColor)
-        hPlt.plot(oGrid[cur!=0],obs[cur!=0],'b-')
+        hPlt.plot(oGrid[cur!=0]-hOffset,obs[cur!=0],'b-')
         hPlt.set_xlim(calH-hkWidth,calH+hkWidth)
         
         cur=windows[:,1]
         kPlt.axvline(x=calK,color=kColor)
-        kPlt.plot(oGrid[cur!=0],obs[cur!=0],'b-')
+        kPlt.plot(oGrid[cur!=0]-kOffset,obs[cur!=0],'b-')
         kPlt.set_xlim(calK-hkWidth,calK+hkWidth)
 
 
         cur=windows[:,3]
-        bPlt.plot(oGrid[cur!=0],obs[cur!=0])
+        bPlt.plot(oGrid[cur!=0]-bOffset,obs[cur!=0])
         bPlt.set_xlim(lamB-bWidth, lamB+bWidth)
         #get blue lines
-        bMin = oGrid[cur!=0][0]
-        bMax = oGrid[cur!=0][-1]
+        bMin = (oGrid[cur!=0]-bOffset)[0]
+        bMax = (oGrid[cur!=0]-bOffset)[-1]
         
         cur=windows[:,2]
-        rPlt.plot(oGrid[cur!=0],obs[cur!=0])
+        rPlt.plot(oGrid[cur!=0]-rOffset,obs[cur!=0])
         rPlt.set_xlim(lamR-rWidth, lamR+rWidth)
         
         #get red lines from windows funct too
-        rMin = oGrid[cur!=0][0]
-        rMax = oGrid[cur!=0][-1]
+        rMin = (oGrid[cur!=0]-rOffset)[0]
+        rMax = (oGrid[cur!=0]-rOffset)[-1]
 
 
        #print('rmin: ' + str(rMin) + ' rMax: ' + str(rMax))
@@ -245,13 +256,13 @@ def pdf_from_intermediate_data(bGrid, base, oData, width=1, multiCorr=None):
         if flatMax != 0:
             targPlt.set_xlim([mini,maxi])
             targPlt.plot(bGrid[flatSection],base[flatSection]*avgS,color='lightgray')
-            targPlt.plot(oGrid[flatSection],obs[flatSection],'b-')
+            targPlt.plot(oGrid[flatSection]-hOffset,obs[flatSection],'b-')
             #print(mini)
             #print(maxi)
         else:
             targPlt.set_xlim([391.5,407])
             targPlt.plot(bGrid[base!=0],base[base!=0]*avgS,color='lightgray')
-            targPlt.plot(oGrid[obs!=0],obs[obs!=0],'b-')
+            targPlt.plot(oGrid[obs!=0]-hOffset,obs[obs!=0],'b-')
         
         #smoothed target and lab plot
         dOLam = oGrid[1]-oGrid[0]
@@ -279,11 +290,11 @@ def pdf_from_intermediate_data(bGrid, base, oData, width=1, multiCorr=None):
         if flatMax != 0:
             smoothedPlt.set_xlim([mini,maxi])
             smoothedPlt.plot(bGrid[flatSection],gdBase[flatSection]*avgS,color='lightgray')
-            smoothedPlt.plot(oGrid[flatSection],gdObs[flatSection],'b-')
+            smoothedPlt.plot(oGrid[flatSection]-hOffset,gdObs[flatSection],'b-')
         else:
             smoothedPlt.set_xlim([391.5,407])
             smoothedPlt.plot(bGrid[gdBase!=0],gdBase[gdBase!=0]*avgS,color='lightgray')
-            smoothedPlt.plot(oGrid[gdObs!=0],gdObs[gdObs!=0],'b-')
+            smoothedPlt.plot(oGrid[gdObs!=0]-hOffset,gdObs[gdObs!=0],'b-')
         
         #flat/other plot
         flatPlt.plot(bGrid[flat!=0], flat[flat!=0], 'k-')

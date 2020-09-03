@@ -87,8 +87,8 @@ def find_window_offsets(labGrid, lab, tarGrid, targ, smooth):
         print('lab count ' + str(np.count_nonzero(labW)))
         print('targ count ' + str(np.count_nonzero(tarW)))
 
-    h.debug=True
-    offsets = np.zeros(4)
+    h.debug=False
+    offsets = []
     for i in range(3):
         cLab = labW[:,i]
         cTar = tarW[:,i]
@@ -100,14 +100,16 @@ def find_window_offsets(labGrid, lab, tarGrid, targ, smooth):
         l3 = tarGrid[cTar!=0]
         l4 = targ[cTar!=0]
         
-        print(len(labGrid))
-        print(len(l1))
+        #print(len(labGrid))
+        #print(len(l1))
 
-        offsets[i] = calc_del_lam(l1,l2,l3,l4,.005,i)[0]
+        out = calc_del_lam(l1,l2,l3,l4,.005,i)
+        offsets.append(out[0])
+        labInterp = out[1]
     
     h.debug=False
 
-    return offsets
+    return offsets, labInterp, tarW
     
 
 #############################################
@@ -237,7 +239,7 @@ def calc_del_lam(labGrid, lab, tarGrid, targ, smooth,tmpDebug=0) :
     #tmpMax = np.argmax(out)
     #print('index of maximum: ' + str(tmpMax) + ' and adjusted delLam: ' + str(tmpMax/len(out)))
     #print(out)
-    if False:#h.debug:
+    if h.debug:
         
         #used for printing/debuging
         #scale = np.mean(gausdTarg)/np.mean(labInterp)
@@ -262,11 +264,11 @@ def calc_del_lam(labGrid, lab, tarGrid, targ, smooth,tmpDebug=0) :
         plt.ylabel("Scaled irradiance")
         #plt.xlim([385,405])
         #plt.ylim([0,2800])
-        plt.plot(tarGrid-offset, gausdTarg, 'g-')
+        plt.plot(tarGrid-offset, targ, 'g-')
         if tmpDebug is 1:
-            plt.axvline(x=393.369, color='blue')
+            plt.axvline(x=h.cakLam, color='blue')
         if tmpDebug is 0:
-            plt.axvline(x=396.85, color='blue')
+            plt.axvline(x=h.cahLam, color='blue')
         #SCALE JUST FOR VIEWING
         #plt.plot(tarGrid,labInterp*scale, 'k-')
         plt.show()
@@ -295,7 +297,7 @@ def calc_del_lam(labGrid, lab, tarGrid, targ, smooth,tmpDebug=0) :
     #plt.show()
     #plt.close()
     
-    return offset,targ,labInterp,gausdTarg
+    return offset,labInterp
 
 
 #Takes in the data array with reference spectra and set name, reference spectra and setname used 

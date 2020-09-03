@@ -182,7 +182,8 @@ class analyzedData(rawData):
     
     shk:float#
     window:[]#windows
-    offset:float#to make printing easier
+    offset:[]#list of offsets for each window
+    #offset:float
 
     day:int
     hour:int
@@ -241,7 +242,7 @@ class analyzedData(rawData):
             return  self.outputDir()+str(self.day)+"_combined_report.pdf"
 
     def label(self):
-        return 'MJD: ' + str(self.mjd) + ' and decYr ' + str(self.decimalYr) + ' w/ shk: ' + str(self.shk) + ' and offset:' + str(self.offset)
+        return 'MJD: ' + str(self.mjd) + ' and decYr ' + str(self.decimalYr) + ' w/ shk: ' + str(self.shk) + ' and offsets:' + str(self.offset)
 
     def starDir(self):
         return  "output/"+self.star+"/"
