@@ -463,7 +463,7 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,only=None):
         #We could likely functionize from individual observation folder-> data output as well
         #but if people are interested in putting data through this pipeline from other telescopes
         #many parts of the above code must be changed. The below would not need to be changed.
-        #analyzed = pipe.sum_daily_data(analyzed,starName,labSpec)
+        analyzed = pipe.sum_daily_data(analyzed,starName,labSpec)
 
         #save all the stars data to file for reloading 
         #just in case it hasnt been made

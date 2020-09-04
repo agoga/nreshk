@@ -64,7 +64,7 @@ sigToFWHM = 2.355#used to display a real FWHM value on plots where smoothing occ
 lowGOrd = 63
 highGOrd = 66
 
-oldScale = 6/5
+oldScale = 1#6/5
 
 siteColors = {  'lsc':["b","Cerro Tololo Interamerican Obs\'"],
                 'cpt':["g","South African Astro Obs\'"],

@@ -19,6 +19,7 @@ from astropy.time import Time
 from calc_shk import calc_shk
 from calc_shk import hk_windows
 from calc_shk import create_window
+from calc_shk import multi_window_calc_shk
 import plotting as plot
 import helpers as h
 
@@ -412,82 +413,58 @@ def sum_daily_data(inData,starName,labSpec):
             print('sun_daily_data missing header very bad')
             continue#go past this day something very wrong
         
-        combinedTarg = np.zeros(len(curD.targOlapf))
+        targList = []
         lamGrid = curD.lamGrid#use the same lamGrid for all of the observations to average
-        windows = curD.window
+        #combinedWin = curD.window
+        windowList =[]
 
-
-        #badlybad TODO
-        fh=(curD.targOlapf*windows[0]).sum()
-        #windows = hk_windows(lamGrid-offsets[1],rv)
-        fk=(curD.targOlapf*windows[1]).sum()
-        #windows = hk_windows(lamGrid-offsets[2],rv)
-        fr=(curD.targOlapf*windows[2]).sum()
-
-        #sameMjd = sameD.mjd
-        for day in sameD:
         
-            dWindow = day.window
+        #combining targs
+        #this is the big deal, increases signal to noise for each days spectra
+        for day in sameD:
+            #offset = day.offset
+            ##dWindow = day.window
+            #dLam = day.lamGrid
 
-            fh=fh +(day.targOlapf*dWindow[0]).sum()
-            #windows = hk_windows(lamGrid-offsets[1],rv)
-            fk=fk +(day.targOlapf*dWindow[1]).sum()
-            #windows = hk_windows(lamGrid-offsets[2],rv)
-            fr=fr+(day.targOlapf*dWindow[2]).sum()
-            #need to interpolate because all the observations have slightly different lamda grids
-            #put them all onto the referece spectra's grid held in curLamGrid
-            #interpfunc = interpolate.interp1d(day.lamGrid-day.offset, day.targOlapf, kind='linear',fill_value='extrapolate')
-            #combinedTarg+=interpfunc(lamGrid)
+            targList.append(day.targOlapf)
+            windowList.append(day.window)
+#adam add the current day to this too
+#############CAUTION here be dragons
+            #Going to add to the target overlap FOR ONLY the windows around each line and band
+            #for i in range(len(dWindow)):
+
+                
+                #for the combined window we will take the min value of each of the windows
+                #so for a triangle window it may be a bit smaller than normal
+                # potentially max is better here? Ricky Q TODO 
+                #combinedWin[i] = [max(value) for value in zip(combinedWin[i], dWindow[i])]
+
+                #need to interpolate because all the observations have slightly different lamda grids
+                #put them all onto a blank spectra
+                #interpfunc = interpolate.interp1d(dLam-offset[i], day.targOlapf, kind='linear',fill_value='extrapolate')    
+                #combinedTarg = combinedTarg + interpfunc(lamGrid)
+                        
             
-
-
-            #combinedTarg = curTarg        
-
-            #The issue is the two targetOlaps are on different grids. 
-            #Interp them on the same grid then add
-            #interpfunc = interpolate.interp1d(sameD.lamGrid-sameD.offset, sameD.targOlapf, kind='linear',fill_value='extrapolate')
-            #sameTarg=interpfunc(curD.lamGrid)
-
-            #this is the big deal, increases signal to noise for each days spectra
-            #combinedTarg = combinedTarg+sameTarg
             #these two are now done
             done.append(day.mjd)
 
+        shkRet = multi_window_calc_shk(lamGrid,targList,curD.raw(),windowList)
         #end combining loop
-#############################################################
-        #START OF CALC SHK NEEDS TO BE GONE
-        starName=curD.star.strip('/')
-    
-    
-        gain=3.4           # e-/ADU
-
-
-        #atm we're not going to apply the radial velocity and just use the adjusted spectra
-        rv = 0#rv/10000 Need RV dictionary
-        tempEff = 0 #base value if not found BUT BAD
-        tempEff = h.tEffLookup[starName]
-        if curD.nOrd == 67:
-        #the SHK calculation with pseudo V-Band
-            plFactor = blackbody_lambda(h.lamB*u.nm,tempEff*u.K).value/blackbody_lambda(h.lamR*u.nm,tempEff*u.K).value
-            fb = fr*plFactor
-
-        num = (fh+fk)*gain
-        den = (fr+fb)*gain
-        alpha = h.siteAlpha[curD.site]
-
-        if hasattr(curD,'format') and curD.format == True:
-            alpha = alpha * h.oldScale
-
-        shk = alpha*(fh+fk)/(fr+fb)
-        #END
-#######################################
+        #wins = hk_windows(lamGrid,0,1)
+        #print(np.shape(lamGrid))
+        #print(np.shape(inData[0].lamGrid))
+        #print(np.shape(combinedTarg))
+        ##print(np.shape(inData[0].targOlapf))
+        #print(max(combinedWin[0]))
+        #print(max(inData[0].window[0]))
+        
         #find SHK with new offset to lamda grid
-        #shkRet = calc_shk(lamGrid, combinedTarg,curD)
+        #shkRet = calc_shk(lamGrid, combinedTarg, curD, wins)
 
-        #shk = shkRet[0]
-        #windows = shkRet[1]
+        shk = shkRet[0]
+        windows = curD.window
 
-        combData = h.analyzedData(curD.raw(),lamGrid,[],combinedTarg,shk,curD.offset,True,False,windows)
+        combData = h.analyzedData(curD.raw(),lamGrid,[],curD.targOlapf,shk,curD.offset,True,False,windows)
 
 
         outputDir = combData.outputDir()

@@ -59,7 +59,7 @@ def plot_timeseries(inData,bad, fig = None, ax = None):
             opac = averageOpacity
         ax.scatter(d.decimalYr.value,d.shk,marker=mark,edgecolors='k', c=col, s=size, alpha=opac)
 
-        if hasattr(d,'format') and d.format == True:
+        if hasattr(d,'bad') and d.bad == True:
             ax.scatter(d.decimalYr.value,d.shk,marker='x',edgecolors='k', c='r', s=size*2/3, alpha=opac)
     
     sites =[]
@@ -156,16 +156,16 @@ def pdf_from_intermediate_data(bGrid, base, oData, width=1):
     plt.suptitle(title)
     plt.ticklabel_format(useOffset=False)
     with PdfPages(reportPath) as curPdf:
-        gs = gridspec.GridSpec(4, 4)
+        gs = gridspec.GridSpec(4, 2)
         
         #references to each plot
-        targPlt = plt.subplot(gs[2,:])
-        smoothedPlt = plt.subplot(gs[1,:])
+        targPlt = plt.subplot(gs[1,:])
+        smoothedPlt = plt.subplot(gs[2,:])
         flatPlt = plt.subplot(gs[3,:])
         kPlt = plt.subplot(gs[0,0])
         hPlt = plt.subplot(gs[0,1])
-        rPlt =plt.subplot(gs[0,2])
-        bPlt =plt.subplot(gs[0,3])
+        rPlt =plt.subplot(gs[1,1])
+        bPlt =plt.subplot(gs[1,0])
         
         #please matplotlib don't make my stuff hard to read!
         hPlt.ticklabel_format(useOffset=False)
@@ -188,12 +188,12 @@ def pdf_from_intermediate_data(bGrid, base, oData, width=1):
         kPlt.set_xlabel("Wavelength(nm)")
         hPlt.set_ylabel("Irradiance")
         
-        hPlt.set_title("Ca-H window")
-        kPlt.set_title("Ca-K window")
+        hPlt.set_title("Ca-H window, offset: " + str(round(hOffset,4))+"nm")
+        kPlt.set_title("Ca-K window, offset: " + str(round(kOffset,4))+"nm")
         rPlt.set_title("Red band window")
         bPlt.set_title("Blue band window")
         
-        targPlt.set_title("Target overlap shifted over reference spectra")
+        targPlt.set_title("Target overlap over reference spectra")
         targPlt.set_xlabel("Wavelength(nm)")
         targPlt.set_ylabel("Irradiance scaled")
         
@@ -210,19 +210,30 @@ def pdf_from_intermediate_data(bGrid, base, oData, width=1):
 
         #cur=windows[:,0] 9/3/2020
         cur=windows[0]
-        hkWidth=h.lineWid + .005
+        hkWidth=h.lineWid + .5 #setting how zoomed out the windows will be
         rWidth =h.conWid/2 +.05
         bWidth =h.conWid/2 +.05
         
+        yScale = 1.4#how much more than the max we use
+
+        #print(obs)
+        #print(cur!=0)
         hPlt.axvline(x=calH,color=hColor)
-        hPlt.plot(oGrid[cur!=0]-hOffset,obs[cur!=0],'b-')
+        hPlt.plot(oGrid-hOffset,obs,'b-')
+        hPlt.axvline(x=h.cahLam-h.lineWid,color='gray')
+        hPlt.axvline(x=h.cahLam+h.lineWid,color='gray')
         hPlt.set_xlim(calH-hkWidth,calH+hkWidth)
+        lowY=min(min(obs[cur!=0]),0)
+        hPlt.set_ylim(lowY,max(obs[cur!=0])*yScale)
         
         cur=windows[1]
         kPlt.axvline(x=calK,color=kColor)
-        kPlt.plot(oGrid[cur!=0]-kOffset,obs[cur!=0],'b-')
+        kPlt.axvline(x=h.cakLam-h.lineWid,color='gray')
+        kPlt.axvline(x=h.cakLam+h.lineWid,color='gray')
+        kPlt.plot(oGrid-kOffset,obs,'b-')
         kPlt.set_xlim(calK-hkWidth,calK+hkWidth)
-
+        lowY=min(min(obs[cur!=0]),0)
+        kPlt.set_ylim(lowY,max(obs[cur!=0])*yScale)
 
         cur=windows[3]
         bPlt.plot(oGrid[cur!=0]-bOffset,obs[cur!=0])
