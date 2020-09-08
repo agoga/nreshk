@@ -1,5 +1,18 @@
-#NRES SHK Specific pipeline. 
+# NRES_SHK_Pipeline.py 
+# Adam Goga
+# 
+# Intended to be NRES SHK specific pipeline functions though that is not likely the case currently. 
 # Order of pipeline and folder structure taylored for nres_shk
+#
+#
+#def NRES_SHK_MkFlat - wrapper function for eventual command line use
+#def create_flat_dict_file - reads all the flats and creates a disctionary for pipeline
+#def old_multifile_NRES_to_data - Reads old NRES specific observations in .fits format 
+#def load_obs_for_pipeline - Reads NRES specific observations in .fits format(will call old_mltifile if detected)
+#def mk_flatolap - combines the proper orders of flat file to make flat overlap
+#def NRES_SHK_Pipeline - the meat and potatoes which handles interactions from raw folders to analyzed data
+
+
 import sys
 import os
 import glob

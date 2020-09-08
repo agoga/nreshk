@@ -1,4 +1,4 @@
-#Helpers.py 
+# helpers.py 
 # Adam Goga
 # Holds the two data structures built for spectra data(raw/analyzed) and other
 # helper functions. Most of the constants for the pipeline which deal with 

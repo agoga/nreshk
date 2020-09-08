@@ -1,12 +1,23 @@
 DONT DELETE ITEMS, USE FIXED FOR FEATURE LIST
 
+after everything, make sure new data goes through fine
+
+way to edit specific observations if the pipeline is failing for it somehow. 
+create your own analyzed data object and push it then the pipeline will skip.
+
+bad shift reasoning:  output/30495/58762/9957401_report.pdf
+
+verify open license
+
+function to calculate mean of star's shk for adjusting to MT wilson
+
 epi eri is bad test star, reversal ruins windowed shifting
 
 Check if larger windows in multi function means larger integration window
 
 Lab spec in intermediate plot is broken somehow
 
-NOT DOING THIS-swap code and output to angstroms
+NOT DOING THIS B/C NRES GIVES IN NM-swap code and output to angstroms
 
 FIXED-remove idl remenants and other obsolete code/variables
 
@@ -27,7 +38,7 @@ I BELIEVE FINE check calc_shk is using windows function properly, may be accessi
 MOSTLY FIXED, TEST NEEDED set up optional radial velocity shifting(if statement to ignore cross-corr align)
 DOCUMENT THIS
 
-SEMI FIXEDSTORE A STARS BAD DATA FILE AND SKIP IT NEXT re-RUN
+SEMI FIXED STORE A STARS BAD DATA FILE AND SKIP IT NEXT re-RUN
 
 
 FIXED change all array shapes to python style to remove transpose
@@ -36,16 +47,20 @@ In making the flat we use the lamda range of 380-420 but it seems like we are us
 
 FIXED - better documentation for alpha value and
 
-FIXED - changed mk_flatolap bounds for each order. This decides how much of each order the flat takes and adds.
+MAYBE FIXED - changed mk_flatolap bounds for each order. This decides how much of each order the flat takes and adds.
 It used to have different values for each order but they were hacked in. Now I used roughly the lowest and highest
 from the original lists for all orders. Seems the have normal flats.
+BAD FLATS THAT COULD BE CAUSED BY THIS CHANGE - 
+30495/58705/3358909
+30495/58705/3435641
+
 
 make pipeline callable on remote server
 
 create function to load data that comes from np.savez NRES_SHK_Pipeline.py
 
 
-******window alignment functionality*****
+FIXED?!??!?!******window alignment functionality*****
 
 Investigate and tweek bad detection settings. Find simple star with knwon good and bad data to decide on specific values for auto-correlation.
 

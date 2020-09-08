@@ -1,3 +1,9 @@
+# plotting.py 
+# Adam Goga
+# 
+#def plot_timeseries - plots final timeseries using the analyzed_data structure
+#def pdf_from_intermediate_data - Produces pdf of analyzable data; zoomed out window 
+# fits, raw spectra and flat along with each value found through the pipeline 
 import astropy.io.fits 
 
 import numpy as np

@@ -1,3 +1,21 @@
+# pipeline.py 
+# Adam Goga
+# 
+# Intended to be the home of general functions that most spectra analysis will need.
+#
+#def import_aligning_spectra - load from file a spectra which aids in aligning our observations
+#def create_integration_windows - Creates the specific integration windows for each interesting location. 
+# for NRES that's V&R bands and CA H&K locations
+#
+#def find_window_offsets - uses calc_del_lam to align each window against the alignment spectra
+#def calc_del_lam - First interpolates the align spectra onto the obsevations lamda grid then use 
+# convolution of the obs and align and fit a parabola around the center to discover accurate offset of the window
+#
+#def sum_daily_data - goes through entire list of analyzed data and sums the observations of each night to provide
+# an averaged SHK value
+
+
+
 import os
 import os.path
 import re

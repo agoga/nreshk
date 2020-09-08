@@ -1,16 +1,19 @@
-#Calc_shk.py 
+# calc_shk.py 
 # Adam Goga
 # This file holds the functions which go from raw data and flat to 
 # Ca II H&K activity indes shk. These functions assume the spectra 
 # has been aligned already.
 
-#File Functions
+#File Functions (not in order)
 #
-#def calc_targOlapf
-#def hk_windows
-#def calc_shk
-#def smart_hk_windows
-#def smart_calc_shk
+#def calc_targOlapf - Take raw data from NRES into lamda & target arrays 
+#def hk_windows - main function called for V&R-bands and H&K windows
+#def create_window - Used in window alignment to find a window around a lamda val
+#def calc_shk - the main function which takes a target calls hk_windows and calc shk val
+#def smart_hk_windows - old verify remove is ok
+#def smart_calc_shk - old verify remove is ok
+#def multi_window_calc_shk - for summing multiple observations
+
 
 #the original calc_shk function has been split into calc_targOlapf and calc_shk to better 
 #debug intermediate values 
@@ -437,14 +440,7 @@ def old_calc_shk(lamGrid, targOlapf, raw, rvcc=0):
         fh=(targOlapf*windows[:,0]).sum()
         fk=(targOlapf*windows[:,1]).sum()
         fr=(targOlapf*windows[:,2]).sum()
-    elif raw.nOrd == 68:
-        #this function gives us the regions of our arrays which hold the information we need to sum
-        windows = smart_hk_windows(lamGrid,rv)
 
-        fh=(targOlapf*windows[:,0]).sum()
-        fk=(targOlapf*windows[:,1]).sum()
-        fr=(targOlapf*windows[:,2]).sum()
-        fb=(targOlapf*windows[:,3]).sum()
 
     
     windows = hk_windows(lamGrid,rv)
@@ -465,10 +461,10 @@ def old_calc_shk(lamGrid, targOlapf, raw, rvcc=0):
     #plt.show()
     #plt.close()
     
-    if raw.nOrd == 67:
-        #the SHK calculation with pseudo V-Band
-        plFactor = blackbody_lambda(h.lamB*u.nm,tempEff*u.K).value/blackbody_lambda(h.lamR*u.nm,tempEff*u.K).value
-        fb = fr*plFactor
+
+    #the SHK calculation with pseudo V-Band
+    plFactor = blackbody_lambda(h.lamB*u.nm,tempEff*u.K).value/blackbody_lambda(h.lamR*u.nm,tempEff*u.K).value
+    fb = fr*plFactor
 
     num = (fh+fk)*gain
     den = (fr+fb)*gain
