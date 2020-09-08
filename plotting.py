@@ -109,26 +109,21 @@ def pdf_from_intermediate_data(bGrid, base, oData, width=1):
     rOffset = oData.offset[2]
     bOffset = oData.offset[3]
     #center of red continuum band (nm, vacuum)
-    #print('offsets')
-    #print(hOffset)
-    ##print(kOffset)
-    #print(rOffset)
 
-    #print(np.shape(obs))
-    #print(np.shape(base))
     #create the directories for pdf plotting and save every intermediate data array
 
     outputDir = oData.outputDir()
     dataPath = oData.data_path()
     reportPath = oData.report_path()
+
     #probably want to move the data saving to a different function
     h.mkdir_p(outputDir)
-
 
     #probably want to move the data saving to a different function
     #IF DEBUG TODO
     np.savez(dataPath, analyzedData=oData)
-    
+    #3rd time
+    #probably want to move the data saving to a different function
 
     lamR=h.lamR
     lamB=h.lamB
@@ -140,9 +135,9 @@ def pdf_from_intermediate_data(bGrid, base, oData, width=1):
     flatMax = max(flat)    
     
     if flatMax != 0:
-        #create a bool array which describes in our grid sections of the flat which higher than .4th of flat max
-        #print(flatMax)
-        flatSection = flat/flatMax >= .01#basically want all of the stuff
+        #create a bool array which describes in our grid sections of the flat which higher than .4th of flat max.
+        #edit - basically want all of the stuff TODO check this, was changed from .4 may need to go back
+        flatSection = flat/flatMax >= .01
 
         #used to set axis bounds
         mini = min(bGrid[flatSection])
@@ -154,10 +149,10 @@ def pdf_from_intermediate_data(bGrid, base, oData, width=1):
     hColor = 'dodgerblue'
     kColor = 'turquoise'
     
-    #create a pdf page with 4 rows and 3 columns
+
+    #comments old, trust no one
+    #create a pdf page with 4 rows and 4 columns
     #the bottom 3 rows use all 3 columns but the HK windows output is split inti
-    #K feature - H feature - R-Band
-    #will need to make 4 wide when V-band is included
     fig, ax = plt.subplots(figsize=(10,10))
     plt.suptitle(title)
     plt.ticklabel_format(useOffset=False)
@@ -172,7 +167,9 @@ def pdf_from_intermediate_data(bGrid, base, oData, width=1):
         hPlt = plt.subplot(gs[0,1])
         rPlt =plt.subplot(gs[1,1])
         bPlt =plt.subplot(gs[1,0])
-        
+
+
+        #could turn some of these into loops by making a list of all plots but idk
         #please matplotlib don't make my stuff hard to read!
         hPlt.ticklabel_format(useOffset=False)
         kPlt.ticklabel_format(useOffset=False)
@@ -222,8 +219,7 @@ def pdf_from_intermediate_data(bGrid, base, oData, width=1):
         
         yScale = 1.4#how much more than the max we use
 
-        #print(obs)
-        #print(cur!=0)
+
         hPlt.axvline(x=calH,color=hColor)
         hPlt.plot(oGrid-hOffset,obs,'b-')
         hPlt.axvline(x=h.cahLam-h.lineWid,color='gray')
@@ -244,6 +240,7 @@ def pdf_from_intermediate_data(bGrid, base, oData, width=1):
         cur=windows[3]
         bPlt.plot(oGrid[cur!=0]-bOffset,obs[cur!=0])
         bPlt.set_xlim(lamB-bWidth, lamB+bWidth)
+
         #get blue lines
         bMin = (oGrid[cur!=0]-bOffset)[0]
         bMax = (oGrid[cur!=0]-bOffset)[-1]
@@ -257,8 +254,7 @@ def pdf_from_intermediate_data(bGrid, base, oData, width=1):
         rMax = (oGrid[cur!=0]-rOffset)[-1]
 
 
-       #print('rmin: ' + str(rMin) + ' rMax: ' + str(rMax))
-        #terrrrible way to get scale fixxxxxxx
+        #terrrrible way to get scale TODO fixxxxxxx
         scale = obs[cur!=0]/base[cur!=0]
         avgS = np.mean(scale)
         

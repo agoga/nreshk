@@ -11,25 +11,25 @@ verify open license
 
 function to calculate mean of star's shk for adjusting to MT wilson
 
-epi eri is bad test star, reversal ruins windowed shifting
+epi eri is bad test star, reversal ruins windowed shifting sometimes
 
 Check if larger windows in multi function means larger integration window
 
-Lab spec in intermediate plot is broken somehow
+FIXED Lab spec in intermediate plot is broken somehow
 
 NOT DOING THIS B/C NRES GIVES IN NM-swap code and output to angstroms
 
 FIXED-remove idl remenants and other obsolete code/variables
 
-once folder order set, place functions on top for easy finding
+DONESKI once folder order set, place functions on top for easy finding
 
-cofirm that we should always use filename for star over the star name from fits header
+cofirm with TBrown or Ricky that we should always use filename for star over the star name from fits header
 
 FIXED Convolutions take the most time(outside of plotting)
 
 FIXED-Easy to use plot function to take this pipeline data and print it with other data
 
-Try catch around single observations as well as stars to allow for large data sets to be processed despite potential errors.
+!!!!!!!!!!!!!!!!!!!!!!!Try catch around single observations as well as stars to allow for large data sets to be processed despite potential errors.
 
 FIXED Old spectra format from NRES may not be running both observations. THIS IS DUE TO TWO OBS PER FOLDER 
 
@@ -39,7 +39,7 @@ MOSTLY FIXED, TEST NEEDED set up optional radial velocity shifting(if statement 
 DOCUMENT THIS
 
 SEMI FIXED STORE A STARS BAD DATA FILE AND SKIP IT NEXT re-RUN
-
+should go into a file which is always read from, with debug option to skip bad
 
 FIXED change all array shapes to python style to remove transpose
 

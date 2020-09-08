@@ -64,17 +64,17 @@ def calc_targOlapf(raw,lamGrid, flatOlap):
     lam=raw.waveGrid
     extrct=raw.spec
     
-    #old T. Brown constants
+    #old T.Brown constants
     #rdnoi=7.*np.sqrt(5.*5.)           # read noise per resolution element in e-
     #resel=.0015                       #resolution element (nm)
 
 
-    #brown
+    #T.Brown
     #find the flat field that will be applied to the order-overlapped spectrum.
     #flat field found in above code TODO 
     nLamg=len(lamGrid)
 
-    #brown
+    #T.Brown
     #make the order-overlapped stellar spectrum, divide it by the flat
     nLam = len(lamGrid)
     targOlap=np.zeros(int(nLam),dtype=np.float64)
@@ -88,13 +88,13 @@ def calc_targOlapf(raw,lamGrid, flatOlap):
 
         scale = dLamdx/dLamdx[int(nx/2.)]
 
-        #original T.Brown Code
+        #original T.T.Brown Code
         #flux=interpol(extrct(*,gord(i))*scale,lam(*,gord(i)),lamgrid)
         interpfunc = interpolate.interp1d(lam[gOrd[i],:],extrct[gOrd[i],:]*scale, kind='linear', fill_value='extrapolate')
         flux=interpfunc(lamGrid)
 
 
-        
+        #deprecated verify and delete soon
         #sl=where(lamgrid le min(lam(*,gord(i))),nsl)
         #sh=where(lamgrid ge max(lam(*,gord(i))),nsh)
         #if(nsl gt 0) then flux(sl)=0.d0
@@ -140,7 +140,7 @@ def calc_targOlapf(raw,lamGrid, flatOlap):
 
 #could easily pass a function for the pass we'd like but now it's either triangle or flat
 def create_window(lamGrid,loc,width,triangle=True,rvcc=None):
-    #brown
+    #T.Brown
     #make output array
     nLam = len(lamGrid)
     window = np.zeros(nLam,dtype=np.float32)
@@ -166,11 +166,11 @@ def create_window(lamGrid,loc,width,triangle=True,rvcc=None):
 
     return window
 
-#rvcc = redshift of target star relative to lab. (km/s)
-#todo move this function to calcshk or copy comments
+
+
 # rvcc = redshift of target star relative to lab. (km/s)
 def hk_windows(lamGrid,rvcc=None,scaleWidth=1):
-    #brown
+    #T.Brown
     #make output array
     nLam = len(lamGrid)
     windows = np.zeros((4,nLam),dtype=np.float32)
@@ -221,7 +221,7 @@ def hk_windows(lamGrid,rvcc=None,scaleWidth=1):
 # For NRES, fB is not easily accessible, since the relevant echelle order is
 # not extracted.  Therefore, fB is approximated as FR*K(Teff), where the 
 # function K is the ratio of Planck functions in the red and blue bandpasses.
-#END TIM BROWN COMMENTS
+#END T.Brown COMMENTS
 def calc_shk(lamGrid, targOlapf, raw, windows, rvcc=None):
     starName=raw.star.strip('/')
     
@@ -449,18 +449,7 @@ def old_calc_shk(lamGrid, targOlapf, raw, rvcc=0):
     #cur=windows[:,0]
     #plt.plot(lamGrid[cur!=0],targOlapf[cur!=0])#*cur[cur!=0],'k-')
     #plt.show()
-    #plt.close()
-    #plt.figure()
-    #cur=windows[:,1]
-    #plt.plot(lamGrid[cur!=0],targOlapf[cur!=0])#*cur[cur!=0],'k-')
-    #plt.show()
-    #plt.close()
-    #plt.figure()
-    #cur=windows[:,2]
-    #plt.plot(lamGrid[cur!=0],targOlapf[cur!=0])#*cur[cur!=0],'k-')
-    #plt.show()
-    #plt.close()
-    
+    #plt.close()    
 
     #the SHK calculation with pseudo V-Band
     plFactor = blackbody_lambda(h.lamB*u.nm,tempEff*u.K).value/blackbody_lambda(h.lamR*u.nm,tempEff*u.K).value
@@ -474,6 +463,5 @@ def old_calc_shk(lamGrid, targOlapf, raw, rvcc=0):
         alpha = alpha * h.oldScale
 
     shk = alpha*(fh+fk)/(fr+fb)
-    #print("shk: "+ str(shk))
 
     return shk, windows, fr/fb

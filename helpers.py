@@ -36,13 +36,7 @@ from errno import EEXIST
 
 
 
-
-#ti=0
-#tf=0
-#timerOut=0
-
-      
-debug = False#DONT TRUST THIS BAD ADAM
+debug = False#DONT TRUST THIS, BAD ADAM
 
 c=2.99792458e5  #speed of light (km/s)
 
@@ -72,12 +66,13 @@ siteColors = {  'lsc':["b","Cerro Tololo Interamerican Obs\'"],
                 'tlv':["k","Wise Obs\'"]}
 
 
-# factor to make shk into equivalent width (a guess!)
+# factor to make shk into equivalent width (a guess currently!)
 siteAlpha ={     'lsc':44,#The alpha value in the Ca HK SHK calculation is telescope dependent
                 'cpt':37,
                 'elp':39,
                 'tlv':39}
 
+#TODO NEW STARS NEED TEFF AND CONFIRM MOST OF THESE TEFF
 tEffLookup = {"1835":5837,
               "12235":6097,
               "20630":5742,
@@ -183,7 +178,7 @@ class analyzedData(rawData):
     shk:float#
     window:[]#window order: Ca H, Ca K, R band, B band
     offset:[]#list of offsets for each window
-    #offset:float
+
 
     day:int
     hour:int
@@ -290,10 +285,6 @@ def bad_spec_detection_v2(lamGrid, targ):
     #print("bad correlation: " + str(maxi/mean)) 
     
     #plt.figure()
-    #plt.plot(range(len(targ)),targ)
-    #plt.show()
-    #plt.close()
-    #plt.figure()
     #plt.plot(range(len(correlation)),correlation)
     #plt.xlim([39900,40100])
     #plt.show()
@@ -328,14 +319,10 @@ def bad_spec_detection(lamGrid, targ):
     dLam = lamGrid[1] - lamGrid[0]
     
     
-    #print('low: ' + str(low) + ' high: ' + str(high))
     gausdTarg = sc.ndimage.filters.gaussian_filter(targ,.05/dLam)
     newLook = gausdTarg[lowI:highI]
     adjLam = lamGrid[lowI:highI]
-    #fig = plt.figure()
-    #plt.plot(adjLam, newLook, 'k-')
-    #plt.show()
-    #plt.close()
+
     first = int(np.nanargmin(newLook))
     
     low = first-width
@@ -383,7 +370,7 @@ def bad_spec_detection(lamGrid, targ):
 
     #todo clean and place into healpers file
 
-#want to crash? name something print...
+#do you want to crash? name something just 'print'...
 def dprint(input):
     if debug:
         print(input)

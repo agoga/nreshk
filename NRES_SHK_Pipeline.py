@@ -29,7 +29,7 @@ from astropy.time import Time
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib import pyplot as plt
 from astropy.convolution import convolve, Box1DKernel
-
+            
 
 import helpers as h
 import pipeline as pipe
@@ -37,6 +37,7 @@ import plotting as plot
 from calc_shk import calc_targOlapf
 from calc_shk import calc_shk
 from calc_shk import old_calc_shk
+from calc_shk import old_hk_windows
 #This is the flat field dictionary creator.
 #it must be run before the pipeline is run since we need the flatDict var
 #do not run create_flat_dict_file unless you have added a new flat field to the flats folder
@@ -102,13 +103,6 @@ def old_multifile_NRES_to_data(obsFileName):
     header = specHDu[0].header
     
     
-    #print('wavehdu')   
-    #print(wvHDu.info())
-    #print(wvHDu[1].data.dtype)
-    #print(type(wvHDu[1].data))
-    #print('done')
-    #print('stuff ' + str(i))
-    #print((wvHDu[1].data)[0])
     #there are two different names for this data, it's mostly in the first name but
     #sometimes in the second
     #need the length here because sometimes the wave grid is in the first element
@@ -180,8 +174,8 @@ def load_obs_for_pipeline(obsFileName):
 # of the effect of varying dlambda/dx in the original spectra.
 def mk_flatolap(raw, flat):
     #WORKING MK_FLATOLAP
-    ##PORT OF DR. TIM BROWN'S NRES HK CODE 
-    ##comments marked brown are Dr. Brown's
+    ##PORT OF DR. TIM T.Brown'S NRES HK CODE 
+    ##comments marked T.Brown are Dr. T.Brown's
 
     lam = raw.waveGrid
     highOrd = raw.nOrd#virtually always we want to go to highest(lowest wavelength) order
@@ -198,8 +192,6 @@ def mk_flatolap(raw, flat):
     #bounds provides the cut off for each order, anthing below the low and above the high 
     #index of each order in the flat file will be ignored
     #bounds=[[615,3803],[670,3770],[733,3740],[750,3660]]
-    #if highOrd == 68:#this is super hacked but I dont know a better way atm 8/2020
-    #    bounds.append([780,3600])
 
     bounds =[]
     for i in range(nGord):
@@ -208,17 +200,17 @@ def mk_flatolap(raw, flat):
     #read filesfits
 
     
-    #brown
+    #T.Brown
     #make wavelength grid
     nLam = ((lamRan[1]-lamRan[0])/dLam)+1
 
     lamGrid = lamRan[0]+dLam*np.arange(nLam,dtype=np.float64)
 
-    #brown
+    #T.Brown
     #make wavelength derivative, scale function to assure integral flux*dlambda
     #is preserved in transformation to constant wavelength bins.
 
-    #verify data types https://www.harrisgeospatial.com/docs/PythonDataConvert.html
+    #TODO verify data types https://www.harrisgeospatial.com/docs/PythonDataConvert.html
     dLambx = np.zeros((nGord,nx),dtype=np.float64)
     scale = np.zeros((nGord,nx),dtype=np.float64)
 
@@ -226,13 +218,15 @@ def mk_flatolap(raw, flat):
 
     for y in range(len(gOrd)) :
         ##Potential BUG first and last in each order are not accurate w idl code and precision is less
+        #UPDATE Not likely an issue
+        #
         #dlamb only accurate to 3 sigfig
         #scale is accurate against idl to about 3 decimal places
         dLambx[y,:] = np.gradient(lam[y,:]) 
         scale[y,:] =  dLambx[y,:]/dLambx[y,int(nx/2)]
 
 
-    #brown 
+    #T.Brown 
     #isolate the desired orders, set contents to zero outside boundaries.
     gFlat = flat[0,gOrd,:]
     sgFlat = np.zeros((nGord,nx),dtype=np.float64)
@@ -250,7 +244,7 @@ def mk_flatolap(raw, flat):
 
 
 
-    #brown
+    #T.Brown
     #interpolate onto flatolap
 
     #https://stackoverflow.com/questions/18326714/idl-interpol-equivalent-for-python
@@ -261,7 +255,7 @@ def mk_flatolap(raw, flat):
         interpfunc = interpolate.interp1d(lam[gOrd[i],:],sgFlat[i,:], kind='linear', fill_value='extrapolate')
         flatOlap = flatOlap+interpfunc(lamGrid)
 
-    #brown
+    #T.Brown
     #make output data array -- [lambda,flatolap].  Write it out.
 
     #there should not be negatives so remove them
@@ -375,7 +369,7 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,only=None):
             flat = fHDu[0].data
             fHDu.close()
 
-
+            #if the flat and obs are many days apart. Should probably add this check back in
             #if abs(mjd-fK) > 25:
             #    print('BAD BAD closest for: '+str(mjd) +' is '+ str(abs(mjd-fK)))
             #elif abs(mjd-fK) > 2:
@@ -392,8 +386,6 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,only=None):
             #get the target data minus the flat
             targOlapf = calc_targOlapf(obsRaw, lamGrid, flatOlap)
 
-
-            from calc_shk import old_hk_windows
 
             #wins = old_hk_windows(lamGrid)
                                             #porque esto?
@@ -421,18 +413,17 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,only=None):
             #rv from meters to km/s as desired by hk_windows
             #find SHK with new offset to lamda grid
             shkRet = calc_shk(lamGrid, targOlapf, obsRaw, integrationWins)
-            #shkRet = old_calc_shk(lamGrid-offsets, targOlapf, obsRaw)
+
             shk = shkRet[0]
             windows = shkRet[1]
-            #windows = correlation[2]
+
             
-            #time to toss bad spec so they won't be summed
+            # Time to toss bad spec so they won't be summed
             badSpec = False
             badReason =' Bad: '
 
             #not included but may need to be, check if any values of targolapf
             #are negative. Makes sense to me that those spectra should be tossed
-            #badSpec = h.bad_spec_detection_v2(lamGrid-offsets,targOlapf) 
             badSpec = h.bad_spec_detection_v2(lamGrid,targOlapf)          
 
             
@@ -470,18 +461,16 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,only=None):
                 continue
 
             analyzed.append(oData)
-        #end of star loop 
+        #end of loop - for obsFileName in obsFiles:
         
-        #major portions of the pipeline are kept in these two functions for readability.
-        #We could likely functionize from individual observation folder-> data output as well
-        #but if people are interested in putting data through this pipeline from other telescopes
-        #many parts of the above code must be changed. The below would not need to be changed.
+        #daily averaging
         analyzed = pipe.sum_daily_data(analyzed,starName,labSpec)
 
         #save all the stars data to file for reloading 
         #just in case it hasnt been made
         h.mkdir_p(oData.starDir())
 
+        #deprecated?! who knows
         t = [[],[]]
         for d in analyzed:
             t[0].append(d.mjd)
@@ -491,12 +480,13 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,only=None):
         pickle.dump(analyzed,f)
         f.close()
 
+        #output bad data, should go into file which is checked
         print(badD)
         plot.plot_timeseries(analyzed,badD)
         
         
         starData.update({starName: analyzed})
-        
+    #end of loop - for s in stars: 
     return analyzed#pass back analyzed data           
 
                 
