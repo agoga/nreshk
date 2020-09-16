@@ -31,3 +31,6 @@ Additional information and references:
 Physics today overview - https://physicstoday.scitation.org/doi/10.1063/PT.3.3956
 Metcalfe et. al (2016) - https://ui.adsabs.harvard.edu/abs/2016ApJ...826L...2M/abstract
 Metcalfe & van Saders - https://ui.adsabs.harvard.edu/abs/2017SoPh..292..126M/abstract
+
+
+<a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" /></a><br /><span xmlns:dct="http://purl.org/dc/terms/" href="http://purl.org/dc/dcmitype/Text" property="dct:title" rel="dct:type">NRES SHK Pipeline</span> by <a xmlns:cc="http://creativecommons.org/ns#" href="https://github.com/agoga/nreshk/" property="cc:attributionName" rel="cc:attributionURL">Adam Goga</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
