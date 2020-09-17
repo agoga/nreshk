@@ -1,4 +1,4 @@
-DONT DELETE ITEMS, USE FIXED FOR FEATURE LIST
+DONT DELETE ITEMS, USE ITEMS LISTED AS FIXED FOR NEW FEATURE LIST
 
 after everything, make sure new data goes through fine
 
@@ -38,12 +38,12 @@ I BELIEVE FINE check calc_shk is using windows function properly, may be accessi
 MOSTLY FIXED, TEST NEEDED set up optional radial velocity shifting(if statement to ignore cross-corr align)
 DOCUMENT THIS
 
-SEMI FIXED STORE A STARS BAD DATA FILE AND SKIP IT NEXT re-RUN
-should go into a file which is always read from, with debug option to skip bad
+SEMI FIXED store a stars bad data file and skip it next re-run
+currently just printed but should go into a file which is always read from, with debug option to skip bad
 
 FIXED change all array shapes to python style to remove transpose
 
-In making the flat we use the lamda range of 380-420 but it seems like we are using significantly less.
+Question In making the flat we use the lamda range of 380-420 but it seems like we are using significantly less.
 
 FIXED - better documentation for alpha value and
 
