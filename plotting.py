@@ -193,8 +193,8 @@ def pdf_from_intermediate_data(bGrid, base, oData, width=1):
         
         hPlt.set_title("Ca-H window, offset: " + str(round(hOffset,4))+"nm")
         kPlt.set_title("Ca-K window, offset: " + str(round(kOffset,4))+"nm")
-        rPlt.set_title("Red band window")
-        bPlt.set_title("Blue band window")
+        rPlt.set_title("Red band window" + str(round(rOffset,4))+"nm")
+        bPlt.set_title("Blue band window" + str(round(bOffset,4))+"nm")
         
         targPlt.set_title("Target overlap over reference spectra")
         targPlt.set_xlabel("Wavelength(nm)")

@@ -295,7 +295,18 @@ def find_and_make_flat(obs):
 # plot final time series of star with all good data included
 #
 #loop through each star as desired
-def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,only=None):
+
+#Inputs
+def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,manualAdj,only=None):
+    """Main NRES SHK Function with various options to create time-series for input stars.\n
+    dataPath- location of data folder\n
+    outputPath- location of output folder\n
+    flatDict- dictionary of flat files created with create_flat_dict_file\n
+    lab- reference spectra to align against\n
+    skip- List of MJD's to skip due to bad data or testing\n
+    forceRun- stars to run even if they have an output folder already\n
+    manualAdj- list of MJD's coupled with 4 offsets(analyzedData.offset) to manually adjust bad shifting\n
+    """
     starName = ''
 
     #resolution for printing
@@ -404,7 +415,21 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,only=None):
             
             
             
+            #ok now if we've been given specific offsets replace them now
+            #if the MJD's are not unique(multiple could have same mjd) then this is borked
+            try:
+                i = manualAdj[0].index(obsRaw.mjd)
+                offs = manualAdj[1][i]
 
+                print('manual offset for mjd ' + str(obsRaw.mjd))
+                #manual
+                for o in range(len(offs)):
+                    if offs is not None:
+                        offsets[o]=offs[0]
+            except:#we dont need this s
+                pass #all gggggg
+ 
+                
 
             #radial velocity calculation
             #lamRef = 396.85
