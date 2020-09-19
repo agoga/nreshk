@@ -15,6 +15,7 @@
 
 import sys
 import os
+import shutil
 import glob
 import logging
 import pickle
@@ -45,9 +46,8 @@ def NRES_SHK_MkFlat(flatPath,flatPickle):
     #UNCOMMENT TO RECREATE THE FLAT DICTIONARY
     create_flat_dict_file(flatPath,flatPickle)
 
-    f = open(flatPath+flatPickle,"rb")
-    flatDict = pickle.load(f)
-    f.close()
+    with open(flatPath+flatPickle,"rb") as f:
+        flatDict = pickle.load(f)
 
     return flatDict
 
@@ -65,24 +65,29 @@ def create_flat_dict_file(flatDir,fileName):
     flatDict.update({'lsc':dict()})
     flatDict.update({'elp':dict()})
 
-
+    
     #this loops through all the flat_....fits files in the flats directory
     #and creates the 2 dimensional dictionary  
     for path, subdirs, files in os.walk(flatDir):
         for name in files:
-            if name.startswith("flat_") and name.endswith(".fits"):
+            if name.endswith(".fits"):
                 flHDu1 = astropy.io.fits.open(os.path.join(path,name))
                 header = flHDu1[0].header
-                
+
+                #print('wtf')
+                #h.print_header(header)
+
                 mjd = float(header['MJD-OBS'])
                 site = header['SITEID']
-                
+                nOrd = header['NAXIS2']#apperently flat has diff keys
+
+                tupl = (nOrd,os.path.join(path,name))
+                #print(tupl)
                 siteDict = flatDict[site]
-                siteDict.update({mjd:os.path.join(path,name)})
+                siteDict.update({mjd:tupl})
                 
-    f = open(flatDir+fileName,"wb")
-    pickle.dump(flatDict,f)
-    f.close()
+    with open(flatDir+fileName,"wb") as f:
+        pickle.dump(flatDict,f)
     
 
 def old_multifile_NRES_to_data(obsFileName):
@@ -174,8 +179,7 @@ def load_obs_for_pipeline(obsFileName):
 # of the effect of varying dlambda/dx in the original spectra.
 def mk_flatolap(raw, flat):
     #WORKING MK_FLATOLAP
-    ##PORT OF DR. TIM T.Brown'S NRES HK CODE 
-    ##comments marked T.Brown are Dr. T.Brown's
+    ##PORT OF DR.T.Brown'S NRES HK CODE 
 
     lam = raw.waveGrid
     highOrd = raw.nOrd#virtually always we want to go to highest(lowest wavelength) order
@@ -297,7 +301,7 @@ def find_and_make_flat(obs):
 #loop through each star as desired
 
 #Inputs
-def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,manualAdj,only=None):
+def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,manualAdj,vBand=False,only=None):
     """Main NRES SHK Function with various options to create time-series for input stars.\n
     dataPath- location of data folder\n
     outputPath- location of output folder\n
@@ -321,16 +325,20 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,manualAdj,o
     for s in stars:
         #need blank arrays to append to since we don't know length due to bad spectra
         obsFiles=[]
-        analyzed=[]
+        analyzed_67=[]
+        analyzed_68=[]#for comparing order data
         badD=[]
 
         if not h.is_folder_star(s):
             print('bad folder \'' + s + '\'')
             continue
         #if the star has an output folder and isnt forced to run we won't run again
-        if os.path.exists(outputPath+s) and s not in forceRun:
-            print(s + " already has output")
-            continue
+        if os.path.exists(outputPath+s):
+            if s in forceRun:
+                shutil.rmtree(outputPath+s)
+            else:
+                print(s + " already has output")
+                continue
         
         print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
         print("Running pipeline on HD " + s)
@@ -351,7 +359,7 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,manualAdj,o
                 continue
             
             if only is not None:
-                if obsRaw.mjd not in only:
+                if np.floor(obsRaw.mjd) not in only:
                     continue
             
             if obsRaw.mjd in skip:
@@ -367,13 +375,17 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,manualAdj,o
 
             #try to find a flat otherwise fail
             #try:
-            if obsRaw.nOrd is 68:
-                continue#TODO REMOVE THIS WHEN YOU WANNA DO NEW SPEC
+            #if obsRaw.nOrd is 68:
+                #continue#TODO REMOVE THIS WHEN YOU WANNA DO NEW SPEC
 
             fD = flatDict[obsRaw.site]
-            fK = h.closestKey(fD,float(obsRaw.mjd))
+            nOrd = obsRaw.nOrd
+            #subset of the dict for this obs' order, check 67 or 68 order flats not both
+            flatSub = {key: value for key, value in fD.items() if value[0] is obsRaw.nOrd}
 
-            flatFilePath = fD[fK]
+            fK = h.closestKey(flatSub,float(obsRaw.mjd))
+
+            flatFilePath = flatSub[fK][1]#second item in tuple is filename
 
             ##8/21/2020 was fHDu = astropy.io.fits.open(os.path.join(path,flatFilePath))
             fHDu = astropy.io.fits.open(os.path.join(starPath,flatFilePath))
@@ -457,10 +469,11 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,manualAdj,o
                 badD.append(obsRaw.mjd)         #fugly
                 badReason+=(' bad spec detector.')
             #among other things?!
-            elif shk < 0 or shk > 1:
-                badD.append(obsRaw.mjd)
-                badSpec = True  
-                badReason+=('shk above 1 or below 0. ')
+            #REMOVED FOR NOW UNTIL ALPHA CALIBRATION
+            #elif shk < 0 or shk > 1:
+            #    badD.append(obsRaw.mjd)
+            #    badSpec = True  
+            #    badReason+=('shk above 1 or below 0. ')
             elif flatRet[2] == True:
                 badD.append(obsRaw.mjd)
                 badSpec = True
@@ -484,13 +497,18 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,manualAdj,o
             if(badSpec):
                 print(str(obsRaw.mjd)+badReason)
                 continue
-
-            analyzed.append(oData)
+            
+            if oData.nOrd is 67:
+                analyzed_67.append(oData)
+            else:
+                analyzed_68.append(oData)
         #end of loop - for obsFileName in obsFiles:
         
         #daily averaging
-        analyzed = pipe.sum_daily_data(analyzed,starName,labSpec)
-
+        analyzed_67 = pipe.sum_daily_data(analyzed_67,starName,labSpec)
+        analyzed_68 = pipe.sum_daily_data(analyzed_68,starName,labSpec)
+        #temp TODO
+        analyzed = analyzed_67 + analyzed_68
         #save all the stars data to file for reloading 
         #just in case it hasnt been made
         h.mkdir_p(oData.starDir())
@@ -501,9 +519,10 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,manualAdj,o
             t[0].append(d.mjd)
             t[1].append(d.shk)
 
-        f = open(oData.starDir() + starName+'.pkl',"wb")
-        pickle.dump(analyzed,f)
-        f.close()
+
+        with open(oData.starDir() + starName+'.pkl',"wb") as f:
+            pickle.dump(analyzed,f)
+        
 
         #output bad data, should go into file which is checked
         print(badD)

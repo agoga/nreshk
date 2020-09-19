@@ -10,16 +10,21 @@ Authors: Adam Goga - adfgoga@gmail.com
 Notes:
 Working.ipynb is the main Jupyter notebook which contains the wrapper for the pipeline.
 
-The following is the required folder structure to get the pipeline to run on your data:
+The following is an example folder structure to get the pipeline to run on your data:
 nreshk > python files.py
        > data\
             > 22049\ #Star folders must start with a number
             > 17051\ #another example of star folder
-            > flats\ #must contain only flat files, the pipeline *should* be able to read flat files in any sub directory
+            > flats\ #must contain ONLY flat files, the pipeline *should* be able to read flat files in any sub directory
             > LabSpectra\ #the reference spectra folder which will be loaded in for cross correlation
        >output\ #created by the pipeline to show time series information on each star and nightly observation's debug info
       
+	  
+	  
+Any .fits files in the flats folder will be considered flats, this allows any naming convention for flat files but the name/date will be read from the fits header. If there are multiple flats for a date, as in a 67 order flat and 68 order, the pipeline will not choose the right one very well.
+	  
 Star directories should contain sub-directories for each observation, maintaining the directory name contained within the .tar.gz files obtained from the LCO archive. I.e. every .fits file representing an observation has it's own folder. Currently the pipeline needs the reduced 'e91' observations from LCO database not the 'e00' files.
+The above is good practice but not required any more.
 
 All spectra and flat files should be in .fits format; not the compressed .fits.fz format that comes from the LCO archive.  Use `funpack` to decompress the files.
 

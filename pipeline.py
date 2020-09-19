@@ -156,7 +156,7 @@ def find_window_offsets(labGrid, lab, tarGrid, targ, scale, smooth):
 
     offsets = []
 
-    for i in range(3):
+    for i in range(4):
         cLab=windows[0][i]
         cTar=windows[1][i]
 
@@ -181,7 +181,7 @@ def find_window_offsets(labGrid, lab, tarGrid, targ, scale, smooth):
         offsets.append(out[0])
         labInterp = out[1]
     
-    offsets.append(0)#temp blue hack
+    #offsets.append(0)#temp blue hack
     return offsets#, labInterp, tarW
 
     
@@ -385,7 +385,8 @@ def calc_del_lam(labGrid, lab, tarGrid, targ, smooth,tmpDebug=0) :
 #correlation[0] is the delta lamda to place spectra in lab frame and lamGrid is the lab frame
 def sum_daily_data(inData,starName,labSpec):  
     rv = 0
-    done = []#array to hold which MJD are done
+    #array to hold which MJD are done
+    done = []
 
     #make a clean copy
     allData = np.asarray(inData)
@@ -397,20 +398,19 @@ def sum_daily_data(inData,starName,labSpec):
     for curD in allData:
         #find the closest MJD's to the current
 
-        
-        #sameD = None
         sameD = [curD]#initialize the same day list 
 
         curMjd = curD.mjd #dont double up if we've alrady DONE this day
+        print(str(curMjd)+' has ' +str(curD.nOrd))
         if(curMjd in done):
             continue
 
         #grab the same day's data(will happen for multiple obs)
         for t in allData:
             if t.hour != curD.hour and t.day == curD.day:
-                #sameD=t
+                if t.nOrd is not curD.nOrd:
+                    continue
                 sameD.append(t)
-                #break
             
 
         #if there is no other obs on this day or if cur
@@ -482,7 +482,7 @@ def sum_daily_data(inData,starName,labSpec):
         shk = shkRet[0]
         windows = curD.window
 
-        combData = h.analyzedData(curD.raw(),lamGrid,[],curD.targOlapf,shk,curD.offset,True,False,windows)
+        combData = h.analyzedData(curD.raw(),lamGrid,curD.flat,curD.targOlapf,shk,curD.offset,True,False,windows)
 
 
         outputDir = combData.outputDir()

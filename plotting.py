@@ -67,6 +67,9 @@ def plot_timeseries(inData,bad, fig = None, ax = None):
 
         if hasattr(d,'bad') and d.bad == True:
             ax.scatter(d.decimalYr.value,d.shk,marker='x',edgecolors='k', c='r', s=size*2/3, alpha=opac)
+
+        if hasattr(d,'nOrd') and d.nOrd == 67:
+            ax.scatter(d.decimalYr.value,d.shk,marker='x',edgecolors='k', c='b', s=size*1/3, alpha=opac)
     
     sites =[]
     for key in h.siteColors:
@@ -193,8 +196,8 @@ def pdf_from_intermediate_data(bGrid, base, oData, width=1):
         
         hPlt.set_title("Ca-H window, offset: " + str(round(hOffset,4))+"nm")
         kPlt.set_title("Ca-K window, offset: " + str(round(kOffset,4))+"nm")
-        rPlt.set_title("Red band window" + str(round(rOffset,4))+"nm")
-        bPlt.set_title("Blue band window" + str(round(bOffset,4))+"nm")
+        rPlt.set_title("R band, center: " + str(round(h.lamR,4))+", width: " + str(round(h.conWid,2))+", offset: " + str(round(rOffset,4))+"nm",fontsize=10)
+        bPlt.set_title("V band, center: " +  str(round(h.lamB,4))+", width: " + str(round(h.conWid,2))+", offset: " + str(round(bOffset,4))+"nm",fontsize=10)
         
         targPlt.set_title("Target overlap over reference spectra")
         targPlt.set_xlabel("Wavelength(nm)")
@@ -275,7 +278,7 @@ def pdf_from_intermediate_data(bGrid, base, oData, width=1):
             #print(mini)
             #print(maxi)
         else:
-            targPlt.set_xlim([391.5,407])
+            targPlt.set_xlim([391.5,407])#BADAM
             targPlt.plot(bGrid[base!=0],base[base!=0]*avgS,color='lightgray')
             targPlt.plot(oGrid[obs!=0]-hOffset,obs[obs!=0],'b-')
         

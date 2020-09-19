@@ -2,7 +2,10 @@ DONT DELETE ITEMS, USE ITEMS LISTED AS FIXED FOR NEW FEATURE LIST
 
 after everything, make sure new data goes through fine
 
-way to edit specific observations if the pipeline is failing for it somehow. 
+
+If there are multiple flats close to a observation, it wont choose the correct one. I.e. if there is a 67 order and a 68 order it may grab 67 which crashes.
+
+FIXED way to edit specific observations if the pipeline is failing for it somehow. 
 create your own analyzed data object and push it then the pipeline will skip.
 
 bad shift reasoning:  output/30495/58762/9957401_report.pdf

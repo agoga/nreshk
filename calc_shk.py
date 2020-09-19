@@ -130,9 +130,11 @@ def calc_targOlapf(raw,lamGrid, flatOlap):
     #print(flatOlap)
 
     #plt.plot(lamGrid, targOlapf, 'k-')
+    #plt.axvline(x=389.9,color='blue')
+    #plt.xlim(389,408)
     #plt.xlabel('wavelength [nm]')
     #plt.ylabel('tragOlapf')
-    #plt.show()
+    ##plt.show()
     #plt.close()
     
     return targOlapf

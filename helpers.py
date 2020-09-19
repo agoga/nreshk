@@ -45,12 +45,14 @@ cakLam=393.366#393.485 #    #Ca II K line wavelength (nm, vacuum)
 
 
 #center of blue continuum band (nm, vacuum)
-lamB=390.2176-.116# +.5#subtraction is the offset from our lab values     
+#offset by .5 nm for new 68 order data
+
+lamB=390.8#-.116 subtraction is the offset from our lab values     
 #center of red continuum band (nm, vacuum)
 #TODO TAKE FROM VAUGHAN 1978 subtraction is the offset from our lab values 
-lamR=400.2204-.116#-.5#subtraction is the offset from our lab values  
+lamR=399.4#-.116subtraction is the offset from our lab values  
 
-conWid=2.0#1.5#2.0         #wavelength width of continuum bands (nm, vacuum)
+conWid=1#2.0         #wavelength width of continuum bands (nm, vacuum)
 lineWid=.109       #FWHM of line core window functions (nm, vacuum)
     
 sigToFWHM = 2.355#used to display a real FWHM value on plots where smoothing occurs
@@ -68,7 +70,7 @@ siteColors = {  'lsc':["b","Cerro Tololo Interamerican Obs\'"],
 
 # factor to make shk into equivalent width (a guess currently!)
 siteAlpha ={     'lsc':44,#The alpha value in the Ca HK SHK calculation is telescope dependent
-                'cpt':37,
+                'cpt':10,
                 'elp':39,
                 'tlv':39}
 
@@ -232,12 +234,12 @@ class analyzedData(rawData):
     #location pdf reports go to
     def report_path(self):
         if self.average is False:
-            return  self.outputDir()+str(self.hour)+"_report.pdf"
+            return  self.outputDir()+str(self.hour)+"_"+str(self.nOrd)+"_report.pdf"
         else:
-            return  self.outputDir()+str(self.day)+"_combined_report.pdf"
+            return  self.outputDir()+str(self.day)+"_"+str(self.nOrd)+"_combined_report.pdf"
 
     def label(self):
-        return 'MJD: ' + str(self.mjd) + ' and decYr ' + str(self.decimalYr) + ' w/ shk: ' + str(self.shk) + ' and offsets:' + str(self.offset)
+        return 'MJD: ' + str(self.mjd) + ' and decYr ' + str(self.decimalYr) + ' with '+str(self.nOrd)+' orders. SHK: ' + str(self.shk) + ' and offsets:' + str(self.offset)
 
     def starDir(self):
         return  "output/"+self.star+"/"
@@ -249,7 +251,7 @@ class analyzedData(rawData):
         t = ''
         if self.bad:
             t = 'bad '
-        t += 'NRES spectra, ' + self.site +', '+self.date+' ('+ '{:.6}'.format(self.decimalYr.value) +'), S='+'{:.4}'.format(self.shk)
+        t += 'NRES spectra, ' + self.site +', '+self.date+' ('+ '{:.6}'.format(self.decimalYr.value) +', ' +str(self.mjd)+'), S='+'{:.4}'.format(self.shk)
         return t
             
         
