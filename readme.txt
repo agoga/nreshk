@@ -1,4 +1,4 @@
-Master branch is deprecated, 'Summer_refactor' represents the most current version of this pipeline. Need external testing before merging the Summer_refactor branch into master. 
+Master branch is deprecated, the branch 'Summer_refactor' represents the most current version of this pipeline. Need external testing before merging the Summer_refactor branch into master. 
 
 ----------------------------------------------------------------------
 This pipeline takes raw data from LCO NRES archives and creates a timeseries of the S-Index for each star it is run on. The S-index is a proxy for magnetic activity in stars. Please see the Mount Wilson Observatory HK project for more information.
