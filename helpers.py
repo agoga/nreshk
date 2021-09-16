@@ -65,6 +65,7 @@ oldScale = 1#6/
 
 pdfMode = 0
 
+maxNoiseRatio=1.7
 
 singleIconSize = 100
 averageIconSize = 130
@@ -261,6 +262,7 @@ class analyzedData(rawData):
     hour:int
     
     shk:float#
+    #time:Time
     decimalYr:Time
     label:str
 
@@ -279,6 +281,9 @@ class analyzedData(rawData):
             mjd = self.mjd
             self.day = int(np.floor(mjd))
             self.hour = int(str(mjd).split('.')[1])
+            #@TODO im going to make it worse, fix this by having only 1 time obj and a function to get diff
+            #self.time=Time(mjd,format='mjd')
+            #self.time.format
             self.decimalYr = Time(mjd,format='mjd')
             self.decimalYr.format = 'decimalyear'
         else:
@@ -373,10 +378,12 @@ def bad_spec_detection_v2(lamGrid, targ):
     #plt.show()
     #plt.close()
     
-    
+    ratio=maxi/mean
     #TODO for future projects, fiddling with this number will remove or allow different spectra
     #1.7 might be a better go
-    if maxi/mean > 1.7:
+    return ratio
+
+    if ratio > maxNoiseRatio:
         return True
     else:
         return False

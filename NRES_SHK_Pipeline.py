@@ -482,12 +482,12 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,manualAdj,o
 
             #not included but may need to be, check if any values of targolapf
             #are negative. Makes sense to me that those spectra should be tossed
-            badSpec = h.bad_spec_detection_v2(lamGrid,targOlapf)          
+            noiseRatio = h.bad_spec_detection_v2(lamGrid,targOlapf)          
 
             
-            if badSpec:
+            if noiseRatio > h.maxNoiseRatio:
                 badSpec = True
-                badD.append(obsRaw.mjd)         #fugly
+                badD.append(obsRaw.mjd)         #@TODO fugly
                 badReason+=(' bad spec detector.')
             #among other things?!
             #REMOVED FOR NOW UNTIL ALPHA CALIBRATION
@@ -507,7 +507,7 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,manualAdj,o
             outputDir = oData.starDir()
             decimalYr = oData.decimalYr
             
-            print(oData.label())
+            print(oData.label()+' with bad ratio: ' + str(noiseRatio))
             
 
             #OUTPUT FOR FURTHER PRINTING
