@@ -49,10 +49,14 @@ def test_daily_data_sum():
 
 
 #divide out by the original alpha then multiply by new
-def adjust_sites_alpha(data,alpha_dict):
+def adjust_sites(data,alphas):
     for d in data:
+        
         unShk = d.shk/d.alpha
-        d.alpha = alpha_dict[d.site]
+        d.alpha = alphas[d.site]
         d.shk = unShk*d.alpha
+
+        if d.average is True:
+            print("MJD: "+str(d.mjd)+" SHK: " + str(d.shk))
     return data
 

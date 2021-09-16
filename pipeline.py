@@ -42,7 +42,7 @@ import plotting as plot
 import helpers as h
 
 #remove once calc shk hack gone
-from astropy.modeling.blackbody import blackbody_lambda
+from astropy.modeling.models import BlackBody
 from astropy import units as u
 #E remove
 #this file holds pipeline functions which are not telescope dependant
@@ -339,9 +339,9 @@ def calc_del_lam(labGrid, lab, tarGrid, targ, smooth,tmpDebug=0) :
         #plt.xlim([385,405])
         #plt.ylim([0,2800])
         plt.plot(tarGrid-offset, targ, 'g-')
-        if tmpDebug is 1:
+        if tmpDebug == 1:
             plt.axvline(x=h.cakLam, color='blue')
-        if tmpDebug is 0:
+        if tmpDebug == 0:
             plt.axvline(x=h.cahLam, color='blue')
         #SCALE JUST FOR VIEWING
         #plt.plot(tarGrid,labInterp*scale, 'k-')
@@ -401,7 +401,7 @@ def sum_daily_data(inData,starName,labSpec):
         sameD = [curD]#initialize the same day list 
 
         curMjd = curD.mjd #dont double up if we've alrady DONE this day
-        print(str(curMjd)+' has ' +str(curD.nOrd))
+        #print(str(curMjd)+' has ' +str(curD.nOrd))
         if(curMjd in done):
             continue
 
@@ -414,7 +414,7 @@ def sum_daily_data(inData,starName,labSpec):
             
 
         #if there is no other obs on this day or if cur
-        if len(sameD) is 1: 
+        if len(sameD) == 1: 
             done.append(curMjd)#must be the MJD not class obj
             continue
         

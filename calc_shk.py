@@ -45,8 +45,9 @@ import astropy.io.fits
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from astropy.convolution import convolve, Box1DKernel
-from astropy.modeling.blackbody import blackbody_lambda
+from astropy.modeling.models import BlackBody
 from astropy import units as u
+from astropy.time import Time
 
 import helpers as h
 
@@ -245,21 +246,21 @@ def calc_shk(lamGrid, targOlapf, raw, windows, rvcc=None):
     if raw.nOrd == 67:
         #this function gives us the regions of our arrays which hold the information we need to sum
         #windows = hk_windows(lamGrid-offsets[0],rv)
-        fh=(targOlapf*windows[0]).sum()
+        raw.fh=(targOlapf*windows[0]).sum()
 
         #windows = hk_windows(lamGrid-offsets[1],rv)
-        fk=(targOlapf*windows[1]).sum()
+        raw.fk=(targOlapf*windows[1]).sum()
 
         #windows = hk_windows(lamGrid-offsets[2],rv)
-        fr=(targOlapf*windows[2]).sum()
+        raw.fr=(targOlapf*windows[2]).sum()
     elif raw.nOrd == 68:
         #this function gives us the regions of our arrays which hold the information we need to sum
         #windows = smart_hk_windows(lamGrid,rv)
 
-        fh=(targOlapf*windows[0]).sum()
-        fk=(targOlapf*windows[1]).sum()
-        fr=(targOlapf*windows[2]).sum()
-        fb=(targOlapf*windows[3]).sum()
+        raw.fh=(targOlapf*windows[0]).sum()
+        raw.fk=(targOlapf*windows[1]).sum()
+        raw.fr=(targOlapf*windows[2]).sum()
+        raw.fb=(targOlapf*windows[3]).sum()
 
     
     #windows = hk_windows(lamGrid,rv)
@@ -282,20 +283,24 @@ def calc_shk(lamGrid, targOlapf, raw, windows, rvcc=None):
     
     if raw.nOrd == 67:
         #the SHK calculation with pseudo V-Band
-        plFactor = blackbody_lambda(h.lamB*u.nm,tempEff*u.K).value/blackbody_lambda(h.lamR*u.nm,tempEff*u.K).value
-        fb = fr*plFactor
+        #https://docs.astropy.org/en/v4.1/modeling/blackbody_deprecated.html
+        #plFactor = blackbody_lambda(h.lamB*u.nm,tempEff*u.K).value/blackbody_lambda(h.lamR*u.nm,tempEff*u.K).value
+        #original above
+        bb=BlackBody(tempEff*u.K, scale=1.0 * u.erg / (u.cm ** 2 * u.AA * u.s * u.sr))
+        plFactor=bb(h.lamB*u.nm).value/bb(h.lamR*u.nm).value
+        raw.fb = raw.fr*plFactor
 
-    num = (fh+fk)*gain
-    den = (fr+fb)*gain
+    num = (raw.fh+raw.fk)*gain
+    den = (raw.fr+raw.fb)*gain
     alpha = h.siteAlpha[raw.site]
 
     if hasattr(raw,'format') and raw.format == True:
         alpha = alpha * h.oldScale
 
-    shk = alpha*(fh+fk)/(fr+fb)
+    shk = alpha*(raw.fh+raw.fk)/(raw.fr+raw.fb)
     #print("shk: "+ str(shk))
 
-    return shk, windows, fr/fb
+    return shk, windows, raw.fr/raw.fb
 
 def multi_window_calc_shk(lamGrid, targOlapf, raw, windows, rvcc=None):
     starName=raw.star.strip('/')
@@ -361,7 +366,12 @@ def multi_window_calc_shk(lamGrid, targOlapf, raw, windows, rvcc=None):
     
     if raw.nOrd == 67:
         #the SHK calculation with pseudo V-Band
-        plFactor = blackbody_lambda(h.lamB*u.nm,tempEff*u.K).value/blackbody_lambda(h.lamR*u.nm,tempEff*u.K).value
+        #plFactor = blackbody_lambda(h.lamB*u.nm,tempEff*u.K).value/blackbody_lambda(h.lamR*u.nm,tempEff*u.K).value
+        #https://docs.astropy.org/en/v4.1/modeling/blackbody_deprecated.html
+        #plFactor = blackbody_lambda(h.lamB*u.nm,tempEff*u.K).value/blackbody_lambda(h.lamR*u.nm,tempEff*u.K).value
+        #original above
+        bb=BlackBody(tempEff*u.K, scale=1.0 * u.erg / (u.cm ** 2 * u.AA * u.s * u.sr))
+        plFactor=bb(h.lamB*u.nm).value/bb(h.lamR*u.nm).value
         fb = fr*plFactor
 
     num = (fh+fk)*gain
@@ -454,7 +464,12 @@ def old_calc_shk(lamGrid, targOlapf, raw, rvcc=0):
     #plt.close()    
 
     #the SHK calculation with pseudo V-Band
-    plFactor = blackbody_lambda(h.lamB*u.nm,tempEff*u.K).value/blackbody_lambda(h.lamR*u.nm,tempEff*u.K).value
+    #plFactor = blackbody_lambda(h.lamB*u.nm,tempEff*u.K).value/blackbody_lambda(h.lamR*u.nm,tempEff*u.K).value
+    #https://docs.astropy.org/en/v4.1/modeling/blackbody_deprecated.html
+    #plFactor = blackbody_lambda(h.lamB*u.nm,tempEff*u.K).value/blackbody_lambda(h.lamR*u.nm,tempEff*u.K).value
+    #original above
+    bb=BlackBody(tempEff*u.K, scale=1.0 * u.erg / (u.cm ** 2 * u.AA * u.s * u.sr))
+    plFactor=bb(h.lamB*u.nm).value/bb(h.lamR*u.nm).value
     fb = fr*plFactor
 
     num = (fh+fk)*gain

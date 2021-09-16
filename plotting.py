@@ -18,17 +18,14 @@ import helpers as h#for constants
 
 
 #this function plots the final time series of SHK values for each star
-def plot_timeseries(inData,bad, fig = None, ax = None):
+def plot_timeseries(inData,bad, fig = None, ax = None, multi=None, outputPath=None):
     mjdArray=[o.mjd for o in inData]
     shkValArray=[o.shk for o in inData]
 
     if fig is None and ax is None:
         fig, ax = plt.subplots(figsize=(12,6))
        
-    singleIconSize = 100
-    averageIconSize = 130
-    singleOpacity = .4
-    averageOpacity = 1
+    
 
     starName = ''
     outputDir = ''
@@ -45,15 +42,14 @@ def plot_timeseries(inData,bad, fig = None, ax = None):
         avg=d.average
         s=d.site
 
-        size = singleIconSize
-        opac = singleOpacity
+        size = h.singleIconSize
+        opac = h.singleOpacity
         
         if s in h.siteColors:
             col = h.siteColors[s][0]
         else:
             col = 'y'#some ugly default if we failed to update the site color dict
-
-        if d.bad in bad:
+        if d.mjd in bad and avg == True:
             mark ='x'
         elif avg == True:
             mark = 'o'#circle
@@ -61,15 +57,15 @@ def plot_timeseries(inData,bad, fig = None, ax = None):
             mark = '^'#triangle
 
         if mark == 'o':
-            size = averageIconSize
-            opac = averageOpacity
+            size = h.averageIconSize
+            opac = h.averageOpacity
         ax.scatter(d.decimalYr.value,d.shk,marker=mark,edgecolors='k', c=col, s=size, alpha=opac)
 
         if hasattr(d,'bad') and d.bad == True:
             ax.scatter(d.decimalYr.value,d.shk,marker='x',edgecolors='k', c='r', s=size*2/3, alpha=opac)
 
-        if hasattr(d,'nOrd') and d.nOrd == 67:
-            ax.scatter(d.decimalYr.value,d.shk,marker='x',edgecolors='k', c='b', s=size*1/3, alpha=opac)
+        #if hasattr(d,'nOrd') and d.nOrd == 67:
+        #    ax.scatter(d.decimalYr.value,d.shk,marker='x',edgecolors='k', c='k', s=size*1/3, alpha=opac)
     
     sites =[]
     for key in h.siteColors:
@@ -88,9 +84,15 @@ def plot_timeseries(inData,bad, fig = None, ax = None):
     plt.title('HD '+starName+' magnetic activity time series')
     plt.xlabel('Time(years)')
     plt.ylabel('Adjusted S-index')
-    plt.savefig(outputDir+starName+'_shk_time_series.pdf',bbox_inches='tight')
-    plt.show()
-    plt.close()
+
+    if outputPath is None:
+        plt.savefig(outputDir+starName+'_shk_time_series.pdf',bbox_inches='tight')
+    else:
+        plt.savefig(outputPath+'_shk_time_series.pdf',bbox_inches='tight')
+        
+    if multi is None:
+        plt.show()
+        plt.close()
 
 
 
@@ -198,8 +200,9 @@ def pdf_from_intermediate_data(bGrid, base, oData, width=1):
         kPlt.set_title("Ca-K window, offset: " + str(round(kOffset,4))+"nm")
         rPlt.set_title("R band, center: " + str(round(h.lamR,4))+", width: " + str(round(h.conWid,2))+", offset: " + str(round(rOffset,4))+"nm",fontsize=10)
         bPlt.set_title("V band, center: " +  str(round(h.lamB,4))+", width: " + str(round(h.conWid,2))+", offset: " + str(round(bOffset,4))+"nm",fontsize=10)
-        
-        targPlt.set_title("Target overlap over reference spectra")
+      
+        #@TODO Sept 2021 bug, code would crash here-since we're not making a targplt plot?/??
+        #targPlt.set_title("Target overlap over reference spectra")
         targPlt.set_xlabel("Wavelength(nm)")
         targPlt.set_ylabel("Irradiance scaled")
         

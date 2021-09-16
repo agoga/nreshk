@@ -301,7 +301,7 @@ def find_and_make_flat(obs):
 #loop through each star as desired
 
 #Inputs
-def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,manualAdj,vBand=False,only=None):
+def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,manualAdj,only=None,new68=None):
     """Main NRES SHK Function with various options to create time-series for input stars.\n
     dataPath- location of data folder\n
     outputPath- location of output folder\n
@@ -310,6 +310,8 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,manualAdj,v
     skip- List of MJD's to skip due to bad data or testing\n
     forceRun- stars to run even if they have an output folder already\n
     manualAdj- list of MJD's coupled with 4 offsets(analyzedData.offset) to manually adjust bad shifting\n
+    only- If it exists, the pipeline will ignore observations with MJD's not in this list
+    new68- 9/19/2020 Temporary variable to test 67/68 order differences
     """
     starName = ''
 
@@ -327,24 +329,31 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,manualAdj,v
         obsFiles=[]
         analyzed_67=[]
         analyzed_68=[]#for comparing order data
+        analyzed=[]
         badD=[]
 
         if not h.is_folder_star(s):
             print('bad folder \'' + s + '\'')
             continue
         #if the star has an output folder and isnt forced to run we won't run again
-        if os.path.exists(outputPath+s):
+
+        if forceRun is not None:
             if s in forceRun:
-                shutil.rmtree(outputPath+s)
+                if new68 is None:
+                    i=0#shutil.rmtree(outputPath+s)
             else:
-                print(s + " already has output")
+                print(s + " is not in force run")
                 continue
+        elif os.path.exists(outputPath+s):
+            print(s + " already has output")
+            continue
         
         print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
         print("Running pipeline on HD " + s)
         print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
         starName = s
 
+        
         starPath = os.path.join(dataPath,s)
          
         #Find all the files that may be correct observations which we will cull during loading
@@ -355,6 +364,8 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,manualAdj,v
         for obsFileName in obsFiles:
             
             obsRaw = load_obs_for_pipeline(obsFileName)
+
+            #if loading breaks, this star is not in the only MJD's to run or we're skipping it then bounce
             if obsRaw is None:
                 continue
             
@@ -363,7 +374,7 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,manualAdj,v
                     continue
             
             if obsRaw.mjd in skip:
-                continue
+                continue                
             
             print('-------------------------------------------------------------------------------')
             obsRaw.star=starName#sometimes the fits file will have a different star than the file name
@@ -392,6 +403,16 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,manualAdj,v
             flat = fHDu[0].data
             fHDu.close()
 
+            #temporary functionality for testing
+            if new68 is not None:
+                if obsRaw.nOrd is 67:#skip all 67
+                        continue
+
+                if new68 is 67:
+                    if obsRaw.nOrd is 68:
+                        obsRaw.nOrd = 67
+
+
             #if the flat and obs are many days apart. Should probably add this check back in
             #if abs(mjd-fK) > 25:
             #    print('BAD BAD closest for: '+str(mjd) +' is '+ str(abs(mjd-fK)))
@@ -414,7 +435,7 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,manualAdj,v
                                             #porque esto?
             #bigger windows to align with
             #aligningWins = pipe.create_shk_windows(lab[0]/10,lab[1], lamGrid, targOlapf, scale=10)
-            offsets = pipe.find_window_offsets(lab[0]/10,lab[1], lamGrid, targOlapf, scale=12, smooth=res)
+            offsets = pipe.find_window_offsets(lab[0]/10,lab[1], lamGrid, targOlapf, scale=25, smooth=res)
             
             integrationWins = pipe.create_integration_windows(lamGrid, targOlapf,offsets)
 
@@ -481,7 +502,7 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,manualAdj,v
 
 
 
-            oData = h.analyzedData(obsRaw,lamGrid,flatOlap,targOlapf,shk,offsets,False,badSpec,integrationWins)
+            oData = h.analyzedData(obsRaw,lamGrid,flatOlap,targOlapf,shk,offsets,False,badSpec,integrationWins, outputPath)
 
             outputDir = oData.starDir()
             decimalYr = oData.decimalYr
@@ -519,7 +540,28 @@ def NRES_SHK_Pipeline(dataPath,outputPath,flatDict,lab,skip,forceRun,manualAdj,v
             t[0].append(d.mjd)
             t[1].append(d.shk)
 
+        old=[] 
 
+        if new68 is 68:
+            with open(oData.starDir() + starName+'.pkl','rb') as f:
+                old = pickle.load(f)
+
+        if new68 is None:
+            with open(oData.starDir() + starName+'_O67.pkl',"wb") as f:
+                pickle.dump(analyzed_67,f)
+
+            with open(oData.starDir() + starName+'_N68.pkl',"wb") as f:
+                pickle.dump(analyzed_68,f)
+
+        if new68 is 68:
+            with open(oData.starDir() + starName+'_O67.pkl',"wb") as f:
+                pickle.dump(old,f)
+
+            with open(oData.starDir() + starName+'_N68.pkl',"wb") as f:
+                pickle.dump(analyzed,f)
+
+
+        analyzed = analyzed + old       
         with open(oData.starDir() + starName+'.pkl',"wb") as f:
             pickle.dump(analyzed,f)
         

@@ -26,12 +26,12 @@ import scipy as sc
 
 import astropy.io.fits
 import astropy.io.fits.header
+from astropy.time import Time
 
 from scipy import signal
 from os import makedirs,path
 from matplotlib import pyplot as plt
-from astropy.io import fits
-from astropy.time import Time
+
 from errno import EEXIST
 
 
@@ -52,15 +52,24 @@ lamB=390.8#-.116 subtraction is the offset from our lab values
 #TODO TAKE FROM VAUGHAN 1978 subtraction is the offset from our lab values 
 lamR=399.4#-.116subtraction is the offset from our lab values  
 
-conWid=1#2.0         #wavelength width of continuum bands (nm, vacuum)
-lineWid=.109       #FWHM of line core window functions (nm, vacuum)
+conWid= 1       /2       #wavelength width of continuum bands (nm, vacuum)
+
+lineWid=.109    /2       #FWHM of line core window functions (nm, vacuum)
     
 sigToFWHM = 2.355#used to display a real FWHM value on plots where smoothing occurs
 
 lowGOrd = 63
 highGOrd = 66
 
-oldScale = 1#6/5
+oldScale = 1#6/
+
+pdfMode = 0
+
+
+singleIconSize = 100
+averageIconSize = 130
+singleOpacity = .4
+averageOpacity = 1
 
 siteColors = {  'lsc':["b","Cerro Tololo Interamerican Obs\'"],
                 'cpt':["g","South African Astro Obs\'"],
@@ -69,10 +78,10 @@ siteColors = {  'lsc':["b","Cerro Tololo Interamerican Obs\'"],
 
 
 # factor to make shk into equivalent width (a guess currently!)
-siteAlpha ={     'lsc':44,#The alpha value in the Ca HK SHK calculation is telescope dependent
-                'cpt':10,
-                'elp':39,
-                'tlv':39}
+siteAlpha ={     'lsc':8.7,# October 2020 match to TIGRE x 20.02 -> MWO
+                 'cpt':9.4,
+                 'elp':10.0,
+                 'tlv':10.6}
 
 #TODO NEW STARS NEED TEFF AND CONFIRM MOST OF THESE TEFF
 tEffLookup = {"1835":5837,
@@ -111,6 +120,61 @@ tEffLookup = {"1835":5837,
               "190406":5940
             }
 
+
+#TRAVIS- Corrected values of TEffs
+tEffLookup = {
+    "1835":5837, #V&F2005
+    "12235":6097, #V&F2005
+    "17051":6097, #V&F2005
+    "20630":5742, #V&F2005
+    "22049":5146, #V&F2005
+    "26913":5631, #GCS2011
+    "30495":5759, #V&F2005
+    "37394":5351, #V&F2005
+    "43587":5892, #V&F2005
+    "49933":6674, #Brewer2016
+    "75332":6258, #V&F2005
+    "76151":5790, #V&F2005
+    "78366":6014, #V&F2005
+    "82443":5287, #Brewer2016
+    "82885":5499, #Brewer2016
+    "88737":6274, #GCS2011
+    "98230B":5926, #GCS2011
+    "100180":5989, #V&F2005
+    "114710":6075, #V&F2005
+    "115383":6234, #V&F2005
+    "115404":4976, #Brewer2016
+    "120136":6387, #V&F2005
+    "126053":5640, #V&F2005
+    "136202":6052, #Brewer2016
+    "149661":5277, #V&F2005
+    "152391":5479, #V&F2005
+    "154417":5989, #V&F2005
+    "165341A":5102, #GCS2011
+    "176051":5891, #GCS2011
+    "182101":6464, #GCS2011
+    "187691":6139, #V&F2005
+    "190406":5932, #V&F2005
+    "194012":6301, #GCS2011
+    "206860":5974, #V&F2005
+    "3427720":6045, #AMP
+    "5184732":5846, #AMP
+    "6116048":6033, #AMP
+    "6278762":5046, #AMP
+    "7871531":5501, #AMP
+    "7970740":5309, #AMP
+    "8006161":5488, #AMP
+    "8379927":6067, #AMP
+    "9139151":6302, #AMP
+    "10124866":5831, #AMP
+    "10454113":6177, #AMP
+    "10644253":6045, #AMP
+    "10963065":6140, #AMP
+    "12009504":6179, #AMP
+    "12258514":5964  #AMP
+            }
+
+
 def print_header(header):
     for h in header.keys():
         print(h, header[h])    
@@ -128,7 +192,14 @@ class rawData:
     star:str
     nx:int
     nOrd:int
+
+
+    #these would be better suited in the analyzed data class but then the analyzeddata instances would need to be created in calc_shk
     alpha:float
+    fh:float
+    fk:float
+    fr:float
+    fb:float
 
     #def __init__(self, target=None):
     ##    if orig is None:
@@ -167,6 +238,10 @@ class rawData:
             self.nOrd = copy.nOrd
             self.nx = copy.nx
             self.alpha = copy.alpha
+            self.fh = copy.fh
+            self.fk = copy.fk
+            self.fr = copy.fr
+            self.fb = copy.fb
 
     
 
@@ -181,7 +256,7 @@ class analyzedData(rawData):
     window:[]#window order: Ca H, Ca K, R band, B band
     offset:[]#list of offsets for each window
 
-
+    outputStr=''
     day:int
     hour:int
     
@@ -195,7 +270,7 @@ class analyzedData(rawData):
 
     average:bool#
 
-    def __init__(self, raw=None,lamGrid=None,flat=None,targOlapf=None, shk=None,offset=None,average=None,bad=None,window=None):
+    def __init__(self, raw=None,lamGrid=None,flat=None,targOlapf=None, shk=None,offset=None,average=None,bad=None,window=None,outputPath=None):
         if raw is not None:
             super().__init__(copy=raw)
 
@@ -209,7 +284,7 @@ class analyzedData(rawData):
         else:
             self.mjd = None
 
-        
+        self.outputPath=outputPath
         self.bad=bad
         self.flat = flat
         self.lamGrid = lamGrid
@@ -242,10 +317,16 @@ class analyzedData(rawData):
         return 'MJD: ' + str(self.mjd) + ' and decYr ' + str(self.decimalYr) + ' with '+str(self.nOrd)+' orders. SHK: ' + str(self.shk) + ' and offsets:' + str(self.offset)
 
     def starDir(self):
-        return  "output/"+self.star+"/"
+        if self.outputPath is None:
+            return "output/"+self.star+"/"
+        else:
+            return self.outputPath+self.star+"/"
 
     def outputDir(self):
-        return "output/"+self.star+"/"+str(self.day)+"/"
+        if self.outputPath is None:
+            return "output/"+self.star+"/"+str(self.day)+"/"
+        else:
+            return self.outputPath+self.star+"/"+str(self.day)+"/"
 
     def pdfTitle(self):
         t = ''
@@ -412,3 +493,18 @@ def find_closest(A, target):
     right = A[idx]
     idx -= target - left < right - target
     return idx
+
+
+def find_mean(data):
+    tot=0
+    for d in data:
+        tot+=d.shk
+    return tot/len(data)
+
+def set_data_mean(data, mean):
+    preMean = find_mean(data)
+    alpha = mean/preMean
+    for d in data:
+        d.shk *= alpha
+
+
